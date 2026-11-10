@@ -98,6 +98,7 @@ namespace TensileLite
                      Base::template Pair<Predicates::Contraction::BufferStoreOffsetLimitCheck>(),
                      Base::template Pair<
                          Predicates::Contraction::GL2PrefetchSAddrOffsetLimitCheck>(),
+                     Base::template Pair<Predicates::Contraction::BufferAddressingLimitCheck>(),
                      Base::template Pair<Predicates::Contraction::WorkgroupNumberCheck>(),
                      Base::template Pair<Predicates::Contraction::PersistentKernelCheck>(),
                      Base::template Pair<Predicates::Contraction::GlobalSplitUCheckMinK>(),
@@ -384,6 +385,12 @@ namespace TensileLite
         struct MappingTraits<Predicates::Contraction::GL2PrefetchSAddrOffsetLimitCheck, IO>
             : public AutoMappingTraits<Predicates::Contraction::GL2PrefetchSAddrOffsetLimitCheck,
                                        IO>
+        {
+        };
+
+        template <typename IO>
+        struct MappingTraits<Predicates::Contraction::BufferAddressingLimitCheck, IO>
+            : public AutoMappingTraits<Predicates::Contraction::BufferAddressingLimitCheck, IO>
         {
         };
 
