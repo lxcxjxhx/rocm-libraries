@@ -364,6 +364,8 @@ void rocblas_internal_log_kernel_select(rocblas_handle                       han
           << int32_t(p.algo) << " --solution_index " << p.solution_index << " --flags " << p.flags;
     if(handle->atomics_mode == rocblas_atomics_allowed)
         bench << " --atomics_allowed";
+    if(handle->emulation_strategy != rocblas_emulation_strategy_default)
+        bench << " --emulation_strategy " << int(handle->emulation_strategy);
 
     rocblas_internal_ostream meta;
     meta << "# source=" << source;

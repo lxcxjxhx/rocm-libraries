@@ -31,6 +31,7 @@
 #include "gtest_helpers.hpp"
 #include <chrono>
 #include <cstdlib>
+#include <mutex>
 #include <new>
 #include <stdexcept>
 #include <stdlib.h>
@@ -480,6 +481,13 @@ rocblas_local_handle::rocblas_local_handle()
 
 rocblas_local_handle::rocblas_local_handle(const Arguments& arg)
 {
+    // Check before anything is set up, so a bad value cannot leak the handle or the env changes.
+    if(arg.emulation < 0 || arg.emulation > 1)
+        throw std::invalid_argument("emulation must be 0 or 1");
+    if(arg.emulation_strategy < rocblas_emulation_strategy_default
+       || arg.emulation_strategy > rocblas_emulation_strategy_eager)
+        throw std::invalid_argument("emulation_strategy must be 0, 1 or 2");
+
     if(arg.use_hipblaslt >= 0)
     {
         auto hipblaslt_env = getenv("ROCBLAS_USE_HIPBLASLT");
@@ -504,7 +512,57 @@ rocblas_local_handle::rocblas_local_handle(const Arguments& arg)
         setenv("ROCBLAS_STREAM_ORDER_ALLOC", "1", true);
     }
 
-    auto status = rocblas_create_handle(&m_handle);
+    // rocBLAS reads ROCBLAS_EMULATE_* when the handle is created, so set them only around
+    // rocblas_create_handle. The guard restores them, and releases the lock, when it goes out of
+    // scope, also if an exception is thrown, so a failing test cannot leave them set for later
+    // tests. The lock keeps threads of the same test from interleaving save and restore.
+    struct emulate_env_guard
+    {
+        const char* const names[2]
+            = {"ROCBLAS_EMULATE_DOUBLE_PRECISION", "ROCBLAS_EMULATE_SINGLE_PRECISION"};
+        std::unique_lock<std::mutex> lock;
+        std::string                  saved[2];
+        bool                         existed[2] = {false, false};
+        bool                         set[2]     = {false, false};
+
+        explicit emulate_env_guard(int emulation)
+        {
+            if(emulation != 1)
+                return;
+            static std::mutex mutex;
+            lock = std::unique_lock<std::mutex>(mutex);
+            for(int i = 0; i < 2; i++)
+            {
+                if(const char* env = getenv(names[i]))
+                {
+                    saved[i]   = env;
+                    existed[i] = true;
+                }
+                set[i] = true;
+                setenv(names[i], "1", true);
+            }
+        }
+
+        ~emulate_env_guard()
+        {
+            for(int i = 0; i < 2; i++)
+            {
+                if(!set[i])
+                    continue;
+                if(existed[i])
+                    setenv(names[i], saved[i].c_str(), true);
+                else
+                    unsetenv(names[i]);
+            }
+        }
+    };
+
+    rocblas_status status;
+    {
+        emulate_env_guard emulate_env(arg.emulation);
+        status = rocblas_create_handle(&m_handle);
+    }
+
     if(status != rocblas_status_success)
         throw std::runtime_error(rocblas_status_to_string(status));
 
@@ -515,6 +573,14 @@ rocblas_local_handle::rocblas_local_handle(const Arguments& arg)
         t_set_stream_callback.reset();
     }
 #endif
+
+    if(arg.emulation_strategy != rocblas_emulation_strategy_default)
+    {
+        status = rocblas_set_emulation_strategy(
+            m_handle, static_cast<rocblas_emulation_strategy>(arg.emulation_strategy));
+        if(status != rocblas_status_success)
+            throw std::runtime_error(rocblas_status_to_string(status));
+    }
 
     // Set the atomics mode
     status = rocblas_set_atomics_mode(m_handle, arg.atomics_mode);

@@ -297,7 +297,16 @@ public:
     {
         const char* atomics_str
             = handle->atomics_mode == rocblas_atomics_allowed ? "--atomics_allowed" : "";
-        log_arguments(*handle->log_bench_os, " ", std::forward<Ts>(xs)..., atomics_str);
+        // A non-default emulation strategy is set on the handle, not by the environment, so log it
+        if(handle->emulation_strategy != rocblas_emulation_strategy_default)
+            log_arguments(*handle->log_bench_os,
+                          " ",
+                          std::forward<Ts>(xs)...,
+                          atomics_str,
+                          "--emulation_strategy",
+                          static_cast<int>(handle->emulation_strategy));
+        else
+            log_arguments(*handle->log_bench_os, " ", std::forward<Ts>(xs)..., atomics_str);
     }
 
     // if profile logging is turned on with
