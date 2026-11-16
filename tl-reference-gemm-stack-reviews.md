@@ -72,9 +72,9 @@ Assessed current PR **#15259** at `571ecae3fc4814ff951461d1d14e48f780975511`. It
 
 | Feedback | Disposition | Recommended action |
 | --- | --- | --- |
-| Stale “checks pending” sentence and unclear 942-test run | Completed: PR description updated November 16 | Replaced with linked current-head results and removed the unlinked 942-test claim. [Draft reply to Tony](#pr-15259-draft-reply-tony-description) is ready. |
-| Per-element OpenMP setter | Agreed: addressed by #15257, pending integration | Keep the cleanup on #15257 and verify the combined code preserves its deletion and #15259’s critical merge. [Draft reply to Tony](#pr-15259-draft-reply-tony-openmp) is ready. |
-| OMP_NUM_THREADS used as proof of team size | Completed: PR description updated November 16 | Test Plan now uses OMP_THREAD_LIMIT=1/3/8; the historical OMP_NUM_THREADS=25 setting is qualified because the actual team size is unverified. Broader policy remains on #15257. [Draft reply to newling](#pr-15259-draft-reply-newling-thread-counts) is ready. |
+| Stale “checks pending” sentence and unclear 942-test run | Completed: PR description updated November 16 | Replaced with linked current-head results and removed the unlinked 942-test claim. [Reply to Tony](#pr-15259-draft-reply-tony-description) is posted and verified. |
+| Per-element OpenMP setter | Agreed: addressed by #15257, pending integration | Keep the cleanup on #15257 and verify the combined code preserves its deletion and #15259’s critical merge. [Reply to Tony](#pr-15259-draft-reply-tony-openmp) is posted and verified. |
+| OMP_NUM_THREADS used as proof of team size | Completed: PR description updated November 16 | Test Plan now uses OMP_THREAD_LIMIT=1/3/8; the historical OMP_NUM_THREADS=25 setting is qualified because the actual team size is unverified. Broader policy remains on #15257. [Reply to newling](#pr-15259-draft-reply-newling-thread-counts) is posted and verified. |
 | No reliable race test for the critical merge | Agreed: non-blocking validation follow-up | Critical retained; [reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4588246818) and [AIHPBLAS-5035 comment](https://amd-hub.atlassian.net/browse/AIHPBLAS-5035?focusedCommentId=706371) are posted and verified. The sanitizer run is pending; see [Future work](#future-work). |
 | Add AMAX-D to the fast path | Resolution recorded: new PR in this stack | Implement and test the feature in a new PR added to the end of the stack; see [Future work](#future-work). Keep #15259 focused on the slow-path optimization. |
 | Policy-bot test filename warning | Ignored per user instruction | No follow-up action. |
@@ -290,9 +290,9 @@ Reviewed commit: `571ecae3fc4814ff951461d1d14e48f780975511`.
 
 <a id="pr-15259-draft-reply-tony-description"></a>
 
-##### Draft reply to Tony — Test Result update
+##### Posted reply to Tony — Test Result update
 
-In response to [Tony’s description feedback](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5897487182). Draft only; not posted.
+In response to [Tony’s description feedback](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5897487182). [Posted reply](https://github.com/ROCm/rocm-libraries/pull/15259#issuecomment-6924519806), November 16, 2026; exact body and target verified by reading it back.
 
 > Updated Test Result with [Math CI build 7](https://math-ci.amd.com/job/rocm-libraries/job/tensilelite-unit-codecov/job/hipblaslt/job/PR-15259/7/consoleText), which tested `571ecae3fc48`. All 14 new AMAX-D cases passed; the full CTest run reported 1,185 passed, four skipped and one disabled, with pre-existing exclusions in the coverage configuration.
 >
@@ -386,13 +386,13 @@ Status: Unresolved · Current diff.
 > ```suggestion
 > ```
 
-**Evaluation and agreed resolution — November 16, 2026:** Correct suggestion, already implemented in [#15257](https://github.com/ROCm/rocm-libraries/pull/15257). The call at [line 2256](https://github.com/ROCm/rocm-libraries/blob/571ecae3fc4814ff951461d1d14e48f780975511/projects/hipblaslt/tensilelite/client/src/Reference.cpp#L2256) changes a worker’s setting for future nested regions; it cannot resize the active team, and this loop starts no nested parallel region. #15257 removes this call together with the outer setter, the reduction setter and the 64-thread define. The agreed resolution is to keep the cleanup on #15257 and link it in the draft reply below. #15257 is open, so this item is addressed there, pending integration. Verify the combined result preserves the setter deletion, per-thread maximum and critical merge.
+**Evaluation and agreed resolution — November 16, 2026:** Correct suggestion, already implemented in [#15257](https://github.com/ROCm/rocm-libraries/pull/15257). The call at [line 2256](https://github.com/ROCm/rocm-libraries/blob/571ecae3fc4814ff951461d1d14e48f780975511/projects/hipblaslt/tensilelite/client/src/Reference.cpp#L2256) changes a worker’s setting for future nested regions; it cannot resize the active team, and this loop starts no nested parallel region. #15257 removes this call together with the outer setter, the reduction setter and the 64-thread define. The agreed resolution is to keep the cleanup on #15257 and link it in the posted reply below. #15257 is open, so this item is addressed there, pending integration. Verify the combined result preserves the setter deletion, per-thread maximum and critical merge.
 
 <a id="pr-15259-draft-reply-tony-openmp"></a>
 
-##### Draft reply to Tony — Per-element OpenMP setter
+##### Posted reply to Tony — Per-element OpenMP setter
 
-In response to [Tony’s OpenMP setter feedback](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4568211307). Draft only; not posted.
+In response to [Tony’s OpenMP setter feedback](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4568211307). [Posted reply](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4589423954), November 16, 2026; exact body and target verified by reading it back.
 
 > This per-element setter is removed in [#15257](https://github.com/ROCm/rocm-libraries/pull/15257), together with the other fixed 64-thread setters. I’m keeping the OpenMP thread-policy cleanup there and keeping this PR focused on the AMAX-D lock restructuring.
 
@@ -463,9 +463,9 @@ Source revision: `30df5bab4294f839ef85a91c732c36c92c0821ca`. File: `rocm-librari
 
 <a id="pr-15259-draft-reply-newling-thread-counts"></a>
 
-##### Draft reply to newling — Thread-count validation
+##### Posted reply to newling — Thread-count validation
 
-In response to the thread-count warning in [newling’s initial linked review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15259.md), posted in [review 5867396457](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5867396457). Draft only; not posted.
+In response to the thread-count warning in [newling’s initial linked review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15259.md), posted in [review 5867396457](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5867396457). [Posted reply](https://github.com/ROCm/rocm-libraries/pull/15259#issuecomment-6924521499), November 16, 2026; exact body and target verified by reading it back.
 
 > Updated the Test Plan to constrain the AMAX-D runs with `OMP_THREAD_LIMIT=1`, `3` and `8`. I also qualified the historical `OMP_NUM_THREADS=25` timing setting: the actual team size for those runs is unverified. The broader thread-policy change is in [#15257](https://github.com/ROCm/rocm-libraries/pull/15257).
 
