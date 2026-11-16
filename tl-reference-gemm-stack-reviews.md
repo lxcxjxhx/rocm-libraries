@@ -682,11 +682,19 @@ Adding `PASS_REGULAR_EXPRESSION` while retaining `WILL_FAIL` is unsuitable: a tw
 
 **Status:** implemented locally as a CMake comment change. All noncomment CMake lines are identical, preserving test dimensions, arguments and registrations. Scoped root and component pre-commit hooks passed; the component hook selected no Python unit/characterization tests. Validation evidence, hook logs and the verified reply are preserved in `/tmp/tl-pr15266-small-k-link-20261116/`. The change has not been pushed.
 
-#### Refresh the PR's test results and related links — next item for discussion
+#### Refresh the PR's test results and related links — agreed and published
 
 [Tony's review](https://github.com/ROCm/rocm-libraries/pull/15266#pullrequestreview-5897488069) asks to replace the stale claims that this split branch has not been built/tested and automated checks are pending, and add #15764/#15765 to Related. The live PR body still contains those claims.
 
-**Recommendation, pending discussion:** refresh Test Result with links to the verified passing [Multi-Arch CI Summary](https://github.com/ROCm/rocm-libraries/actions/runs/42914665250/job/130356281758), [Component CI Summary](https://github.com/ROCm/rocm-libraries/actions/runs/42914663179/job/130319662977) and [Math CI Summary](https://math-ci.amd.com/job/rocm-libraries/job/status-gate/job/hipblaslt/job/PR-15266/lastBuild/stages/) for published head `4554dab796dee28e4e640b7f688c4d0f12d5b375`. Record the 390 passing build-tree and relocated-install driver tests for the local review fixes separately, with their commit/evidence references. Add [#15764](https://github.com/ROCm/rocm-libraries/issues/15764) and [#15765](https://github.com/ROCm/rocm-libraries/pull/15765) to Related and explain the planned stack insertion. The successful Math CI `tensilelite-unit-codecov` status alone does not establish which individual cases executed, so do not repeat an unverified case-count claim from the review. This PR-body update has not been made; prepare and show the exact text before publication.
+**Agreed implementation:** updated Test Result with links to the verified passing [Multi-Arch CI Summary](https://github.com/ROCm/rocm-libraries/actions/runs/42914665250/job/130356281758), [Component CI Summary](https://github.com/ROCm/rocm-libraries/actions/runs/42914663179/job/130319662977) and [Math CI Summary](https://math-ci.amd.com/job/rocm-libraries/job/status-gate/job/hipblaslt/job/PR-15266/lastBuild/stages/) for published head `4554dab796dee28e4e640b7f688c4d0f12d5b375`. The two linked GitHub jobs were independently checked to have that head and successful conclusions. Separately recorded the local review fixes at `f20b0195c60a`: Release builds, all 390 driver CTests passing in both the build tree and relocated installation, failure controls and scoped hooks. Their JUnit reports were reread to confirm counts and absence of failures/skips. The body explicitly says the local fixes are not pushed. Related now links [#15764](https://github.com/ROCm/rocm-libraries/issues/15764), [#15765](https://github.com/ROCm/rocm-libraries/pull/15765) and the preceding #15259, and explains the planned insertion. No per-case CI count was inferred from summary statuses.
+
+**[Reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15266#issuecomment-6927257494):** posted after updating the body and verified by reading it back.
+
+> @tony-davis Updated Test Result with links to the passing CI summaries at `4554dab` and the separately identified local validation: 390 driver tests in both the build tree and relocated installation. Related now links #15764 and #15765 and explains where #15765 will be inserted in the stack. The code fixes remain local.
+
+**Status:** published and verified. Only Test Result and Related changed, and the PR head remained unchanged. The exact body and reply were shown before publication. `gh pr edit` failed on the retired Projects API; a guarded REST body update succeeded. Snapshots, payload, CI job metadata, proposed/verified body and verified reply are preserved in `/tmp/tl-pr15266-description-refresh-20261116/`.
+
+**Walkthrough status:** all human feedback items on #15266 have an agreed resolution. The source fixes remain local, and #15765's stack insertion and documentation follow-up remain recorded in Future work.
 
 ### Reviews (3)
 
@@ -1031,6 +1039,14 @@ Source revision: `ede5c5f065835ae571ce0647b4e07af2c6cb8d64`. File: `rocm-librari
 [GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15274) · State: **OPEN**
 
 Branch: `users/alvasile/tl-speedup-24-reference-fast-path-int8`. Base: `users/alvasile/tl-speedup-16-cpu-gemm-driver-int8`. Head at collection: `f58bbb3388853e13cdf85bda0917485d590c4ddc`.
+
+### Feedback walkthrough — November 16, 2026
+
+#### Preserve the original C when C/D share storage — next item for discussion
+
+Newling's [initial review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15274.md#read-the-original-c-before-writing-an-aliased-d) and final correctness review identify an intermediate-write bug. A fresh check confirms the published head remains `f58bbb3388853e13cdf85bda0917485d590c4ddc`, with the tile-to-D copy still preceding the C read at [Reference.cpp:1816](https://github.com/ROCm/rocm-libraries/blob/f58bbb3388853e13cdf85bda0917485d590c4ddc/projects/hipblaslt/tensilelite/client/src/Reference.cpp#L1816). For Int32 C/D with an Int32 epilogue, the shadow C buffer can reference C directly. If C and D share storage, writing the dot product destroys the original beta input. The review's 1x1 example uses A=2, B=3, initial C=D=5 and alpha=beta=1: the correct result is 11, while the submitted fast path gives 12. That reported reproducer was not rerun during the description-only work on #15266.
+
+**Recommendation, pending discussion:** take [suggestion 1024648658c](https://github.com/newling/rocm-libraries/commit/1024648658c17b9f3dfafb3aa41929817081c84f). Remove the intermediate tile-to-D copy, read the dot product directly from `cReg` during the epilogue, read the original C and write only the final D. Keep its `Int8InPlaceCDPreservesBetaInput` regression with independently known answer 11. Apply the common production correction once in #15274 and retain #15276's later complex regression when integrating the stack. This fix has not been implemented here; the worktree remains on #15266.
 
 ### Reviews (1)
 
