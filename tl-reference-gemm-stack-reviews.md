@@ -617,6 +617,26 @@ Source revision: `ede5c5f065835ae571ce0647b4e07af2c6cb8d64`. File: `rocm-librari
 
 Branch: `users/alvasile/tl-speedup-16-cpu-gemm-driver-int8`. Base: `users/alvasile/tl-speedup-09-reference-slow-path-amax-d`. Head at collection: `4554dab796dee28e4e640b7f688c4d0f12d5b375`.
 
+### Feedback walkthrough — November 16, 2026
+
+#### Preserve Int32 alpha/beta during CLI parsing — agreed fix
+
+The [initial linked review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15266.md#preserve-the-full-advertised-int32-scalar-range-during-cli-parsing) and [final correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15266_correctness_20261113.md#preserve-int32-scalars-before-validating-or-using-them) identify the same test-driver bug. Alpha/beta were parsed as float, losing precision before the Int32 domain check and before either the reference or oracle used them. Valid beta `2147483647` rounded up and was rejected; some other integers above `2^24` could silently change. The reproduction failed on the rebased branch at `3c54ff8ac10294fb5840cedf0b45e237a5babc67`.
+
+**Agreed implementation:** apply [newling's suggestion 2fcafc2eee3](https://github.com/newling/rocm-libraries/commit/2fcafc2eee3f322abd349beeda112823931c8591). Parse and carry alpha/beta as double through `runGemm`, then use the existing conversions to the selected scalar type. Keep the integer and range checks in double. Add `CPUGemm.slow_I8_I32_I32_Int32BetaBoundary` through the shared registration helper before category labeling, so it runs in both the build-tree and installed standard suites. Source formatting and the CMake insertion point are adapted to this branch's local CI integration.
+
+[Reply to newling](https://github.com/ROCm/rocm-libraries/pull/15266#issuecomment-6925033977) was posted before implementation and verified by reading it back:
+
+> @newling Agreed. I’m going to apply your scalar-parsing fix in #15266: preserve alpha and beta as double until conversion to the selected scalar type, and add the Int32 boundary regression. I reproduced the rejection of valid beta `2147483647` on this branch.
+
+**Status:** implemented and validated locally. The original driver fails the new regression with exit 1; the fixed regression passes. All **390 driver CTests passed in both the build tree and a relocated installation**, with no failures or skips. All **24 focused reference gtests passed** from the installation. Discovery confirms the 389 existing driver commands and properties are preserved; only the boundary test is added, with matching installed/build-tree arguments and properties. Twelve manual controls confirm that fractional, out-of-range and non-finite alpha/beta values remain rejected. Scoped root and component pre-commit hooks passed; the component hook selected no Python unit/characterization tests. The fix has not been pushed. Logs, reports, discovery JSON, the source suggestion and verified reply are preserved in `/tmp/tl-pr15266-scalar-fix-20261116/`.
+
+#### Use the existing type metadata — next item for discussion
+
+Newling's [initial review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15266.md#use-the-existing-type-metadata) proposes replacing the driver's private `TypeTraits` table with `TensileLite::TypeInfo<T>::Enum`. Source inspection confirms that `TypeInfo` already covers all 11 locally specialized types with the same enum values, including packed `Float4x2`.
+
+**Recommendation, pending discussion:** take [suggestion 088d585c895](https://github.com/newling/rocm-libraries/commit/088d585c895cff36e459ee0409c1b812edd9da81). Add the explicit `Tensile/DataTypes.hpp` include, remove the local specializations and replace the four enum lookups with `TypeInfo<T>::Enum`. This is an optional maintenance improvement; the current mappings are correct. When restacking the later PRs, convert any newly introduced `TypeTraits` uses and specializations to the shared metadata too. This cleanup has not been implemented here.
+
 ### Reviews (3)
 
 #### newling — COMMENTED — review 5879596049
