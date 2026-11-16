@@ -1115,13 +1115,17 @@ Separately identified the locally committed review fixes at `38ab457d2794`: Rele
 
 **Verification:** a fresh body/head/base read matched the saved snapshot before the guarded REST PATCH. The subsequent read matched the prepared body exactly and confirmed unchanged published code head `f58bbb3388853e13cdf85bda0917485d590c4ddc` and base `users/alvasile/tl-speedup-16-cpu-gemm-driver-int8`. Only Test Result changed. Before/after snapshots and the exact body are saved under `/tmp/tl-pr15274-test-result-update-20261116/`.
 
-#### Select the fast-path gtests explicitly in Test Plan — next item for discussion
+#### Select the fast-path gtests explicitly in Test Plan — published
 
-Newling's [linked initial review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15274.md#tests) notes that a CTest name regex containing `ReferenceFastPath` does not select these gtests in the category-based build. The live Test Plan still claims that `-R 'CPUGemm\..*I8|ReferenceFastPath'` runs both the Int8 driver cases and fast-path gtests.
+Newling's [linked initial review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15274.md#tests) notes that a CTest name regex containing `ReferenceFastPath` does not select these gtests in the category-based build. The previous Test Plan claimed that `-R 'CPUGemm\..*I8|ReferenceFastPath'` ran both the Int8 driver cases and fast-path gtests.
 
 **Verified locally:** CTest's JSON inventory selects 141 driver entries with that regex and zero gtest suites. The gtests are registered as `tensilelite-tests_standard_suite`, `tensilelite-tests_comprehensive_suite` and `tensilelite-tests_full_suite`; none matches the regex. The inventory is saved as `/tmp/tl-pr15274-test-result-update-20261116/ctest-inventory.json`.
 
-**Recommendation, pending discussion:** correct the PR's manual Test Plan to select the Int8 driver CTests with `--no-tests=error`, then invoke `tensilelite-tests` directly using the validated filter `ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*`. Set `OMP_THREAD_LIMIT=8`, `OMP_NUM_THREADS=4` and `KMP_BLOCKTIME=0` for these runs. This selects the intended gtests regardless of whether CTest uses category suites or individual discovery. The required installed CI integration is already present locally from #15259; this item corrects the documented manual command. No Test Plan edit has been published yet.
+**Agreed implementation:** published the corrected manual Test Plan. It now selects the Int8 driver CTests with `--no-tests=error`, then invokes `tensilelite-tests` directly using the validated filter `ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*`. It sets `OMP_THREAD_LIMIT=8`, `OMP_NUM_THREADS=4` and `KMP_BLOCKTIME=0` for these runs. This selects the intended gtests regardless of whether CTest uses category suites or individual discovery. The required installed CI integration is already present locally from #15259; this item corrects the documented manual command.
+
+**Verification:** guarded the REST PATCH against a fresh body/head/base read, then re-read the published body and asserted exact equality with the prepared Markdown. Published code head `f58bbb3388853e13cdf85bda0917485d590c4ddc` and base `users/alvasile/tl-speedup-16-cpu-gemm-driver-int8` are unchanged. Only Test Plan changed, and its shell block passes `bash -n`. Exact text and before/after snapshots are saved under `/tmp/tl-pr15274-test-plan-update-20261116/`.
+
+**Walkthrough status:** all feedback items for #15274 now have an agreed resolution. The code fixes remain local, and the source-comment/test changes after #15765 integration remain recorded in [Future work](#future-work). A fresh read of GitHub reviews, inline comments and discussion comments found no additional human feedback. Continue with #15275 below.
 
 ### Reviews (1)
 
@@ -1440,6 +1444,16 @@ Source revision: `ede5c5f065835ae571ce0647b4e07af2c6cb8d64`. File: `rocm-librari
 [GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15275) · State: **OPEN**
 
 Branch: `users/alvasile/tl-speedup-25-reference-fast-path-float8-output`. Base: `users/alvasile/tl-speedup-24-reference-fast-path-int8`. Head at collection: `b6828c46316720641f2e3f15a1320201d4f1c34b`.
+
+### Feedback walkthrough — November 16, 2026
+
+#### Reject scaled Half-to-Float8 narrowing from the fast path — next item for discussion
+
+[Tony's ScaleAB comment](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4568213239) and [newling's final linked review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15275_correctness_20261113.md#keep-scaled-half-to-float8-inputs-out-of-the-fast-path-until-the-formulas-agree) identify different conversion/scaling orders for Half storage narrowed to Float8 during multiplication. Newling reports a scalar 1×1 case with Half A=0.9, Float8 B=1, scaleA=3, scaleB=1, alpha=1 and beta=0 producing 2.75 on the slow path and 2.5 on the fast path. Scalar slow execution scales before narrowing; fast execution narrows before applying the scale. In Vector mode, the slow path omits the narrowed operand's scale, while the fast path applies it.
+
+**Verified current scope:** GitHub still publishes head `b6828c46316720641f2e3f15a1320201d4f1c34b`. Inspected that exact source and confirmed eligibility has no guard for these scaled Half-to-Float8 cases, while the CMake `noscale` explanation explicitly omits their ScaleAB coverage. The local #15275 branch is `04197cbc20eb22675d88cf8b5725db691746ed5d`; it also lacks this guard. No fresh numerical run is claimed for #15275 in this step.
+
+**Recommendation, pending discussion:** take newling's [d930b5107f1](https://github.com/newling/rocm-libraries/commit/d930b5107f10b667c55bfe4a9454e4f4fa8f9d4b) guard and compact regression on #15275. Reject fast eligibility for Float8 outputs when either input has Half storage, a Float8 compute-input type, and Scalar or Vector ScaleAB. Test both operand directions and both scale modes through the normal solver, and update the CMake explanation to say these fast combinations are rejected. The guard preserves current slow-reference behavior, including the Vector omission. Tony's broader guard would also change existing Half/Float-output eligibility; that expansion needs separate validation. A correction to slow scaling semantics should be based on GPU evidence. Newling's linked suggestion changes fast eligibility and adds a regression; it contains no slow-path formula edit. No #15275 code or GitHub text has been changed in this step.
 
 ### Reviews (1)
 
