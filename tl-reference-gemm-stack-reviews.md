@@ -631,11 +631,25 @@ The [initial linked review](https://github.com/newling/agent-public-reviews/blob
 
 **Status:** implemented and validated locally. The original driver fails the new regression with exit 1; the fixed regression passes. All **390 driver CTests passed in both the build tree and a relocated installation**, with no failures or skips. All **24 focused reference gtests passed** from the installation. Discovery confirms the 389 existing driver commands and properties are preserved; only the boundary test is added, with matching installed/build-tree arguments and properties. Twelve manual controls confirm that fractional, out-of-range and non-finite alpha/beta values remain rejected. Scoped root and component pre-commit hooks passed; the component hook selected no Python unit/characterization tests. The fix has not been pushed. Logs, reports, discovery JSON, the source suggestion and verified reply are preserved in `/tmp/tl-pr15266-scalar-fix-20261116/`.
 
-#### Use the existing type metadata — next item for discussion
+#### Use the existing type metadata — agreed cleanup
 
 Newling's [initial review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15266.md#use-the-existing-type-metadata) proposes replacing the driver's private `TypeTraits` table with `TensileLite::TypeInfo<T>::Enum`. Source inspection confirms that `TypeInfo` already covers all 11 locally specialized types with the same enum values, including packed `Float4x2`.
 
-**Recommendation, pending discussion:** take [suggestion 088d585c895](https://github.com/newling/rocm-libraries/commit/088d585c895cff36e459ee0409c1b812edd9da81). Add the explicit `Tensile/DataTypes.hpp` include, remove the local specializations and replace the four enum lookups with `TypeInfo<T>::Enum`. This is an optional maintenance improvement; the current mappings are correct. When restacking the later PRs, convert any newly introduced `TypeTraits` uses and specializations to the shared metadata too. This cleanup has not been implemented here.
+**Agreed implementation:** applied [suggestion 088d585c895](https://github.com/newling/rocm-libraries/commit/088d585c895cff36e459ee0409c1b812edd9da81). Added the explicit `Tensile/DataTypes.hpp` include, removed all 11 local specializations and replaced the four enum lookups with `TypeInfo<T>::Enum`. The mappings are unchanged. When restacking the later PRs, convert any newly introduced `TypeTraits` uses and specializations to the shared metadata too; that integration is still pending.
+
+**Status:** implemented and validated locally. The Release build of `cpu-gemm-driver` and `tensilelite-tests` succeeded, and all **390 existing driver CTests passed** in the build tree with no failures or skips. Scoped root and component pre-commit hooks passed; the component hook selected no Python unit/characterization tests. No test registrations or installation rules changed. The cleanup has not been pushed. The source suggestion, patch, build log, CTest log, JUnit report and hook logs are preserved in `/tmp/tl-pr15266-typeinfo-cleanup-20261116/`.
+
+**[Reply to newling](https://github.com/ROCm/rocm-libraries/pull/15266#issuecomment-6925521343):** posted after the local commit and verified by reading it back.
+
+> @newling Applied your [TypeInfo cleanup](https://github.com/newling/rocm-libraries/commit/088d585c895cff36e459ee0409c1b812edd9da81) in #15266. The driver now uses `TypeInfo<T>::Enum` instead of its private type table. The build and all 390 driver CTests passed locally. The commit is local for now.
+
+#### Require the intended diagnostic in rejected-option tests — next item for discussion
+
+[Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212077) and [newling's linked review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15266.md#require-the-intended-diagnostic-in-rejected-option-tests) identify the same coverage gap. `CPUGemm.I8_MixedA_Rejected`, `CPUGemm.I8_UnsupportedCD_Rejected`, `CPUGemm.I8_NonIntegerAlpha_Rejected` and `CPUGemm.F32_TypeCD_Rejected` use `WILL_FAIL`, so an unrelated ordinary nonzero exit can satisfy them.
+
+**Recommendation, pending discussion:** adapt the shared failure checker from [suggestion 66ef187d435](https://github.com/newling/rocm-libraries/commit/66ef187d43535cacaba49a328b77b0388909291e) here. Require exit code **1** and each case's intended diagnostic. Integrate it into the existing registration helper, preserve arguments, environment, processor limits, timeouts and category labels, and export/install the checker for the relocated suite. Convert these four cases here and reuse the same facility as later PRs add negative cases. The full stack-tip patch contains changes for later branches and should not be applied wholesale.
+
+Adding `PASS_REGULAR_EXPRESSION` while retaining `WILL_FAIL` is unsuitable: a two-case control with the installed CTest version failed on the intended diagnostic and passed on unrelated text because the result is inverted. A wrapper must check both conditions and report success only when both hold. Control evidence is in `/tmp/tl-pr15266-typeinfo-cleanup-20261116/ctest-property-control/`. This next change has not been implemented.
 
 ### Reviews (3)
 
