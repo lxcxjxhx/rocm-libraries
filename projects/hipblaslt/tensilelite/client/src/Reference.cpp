@@ -2322,13 +2322,10 @@ namespace TensileLite
                         problem.alphaType(), inputs.scaleA, posA, aConjugate);
                     Accumulator scaleB = GetValue<Accumulator>(
                         problem.alphaType(), inputs.scaleB, posB, aConjugate);
-                    if constexpr(sizeof(typename Inputs::AType)
-                                 <= sizeof(typename Inputs::ComputeInputTypeA))
-                        alpha *= scaleA;
-
-                    if constexpr(sizeof(typename Inputs::BType)
-                                 <= sizeof(typename Inputs::ComputeInputTypeB))
-                        alpha *= scaleB;
+                    // Vector scales are applied after the dot product, including
+                    // when an input was narrowed before multiplication.
+                    alpha *= scaleA;
+                    alpha *= scaleB;
                 }
 
                 auto resultD = multiply<Accumulator>(alpha, value);
