@@ -37,6 +37,7 @@ The new PR must extend fast-path eligibility and independently validate D and AM
 ### 2. Insert PR #15765 between #15259 and #15266
 
 - [ ] Add [#15765 — accumulate Int8 dot products before float epilogues](https://github.com/ROCm/rocm-libraries/pull/15765) to this stack immediately after #15259 and before the next PR, #15266.
+- [ ] Include the slow-path description update in #15765's implementation/integration work. When restacking #15266 onto the fixed reference, replace the float-per-K accumulation and `2^24` precision-limit explanation in `projects/hipblaslt/tensilelite/tests/CMakeLists.txt` with the corrected integer reduction followed by the float epilogue. Refresh the matching oracle-versus-slow-reference note in `client/cpu_gemm_driver.cpp` and the precision-limit wording in #15266's PR description. Describe these documentation updates in #15765's contents. Keep other output-range constraints explicit and retain its large-K regression coverage. [Source feedback](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212035).
 
 The intended branch order is `users/alvasile/tl-speedup-09-reference-slow-path-amax-d` → `users/alvasile/fix-int8-slow-reference-accumulation` (#15765) → `users/alvasile/tl-speedup-16-cpu-gemm-driver-int8` (#15266).
 
@@ -669,11 +670,23 @@ Adding `PASS_REGULAR_EXPRESSION` while retaining `WILL_FAIL` is unsuitable: a tw
 
 **Status:** implemented locally as source comments only. The pseudocode was checked against the golden reduction, epilogue and storage-cast implementations and all six type registrations. All noncomment source lines are identical before and after the change. Scoped root and component pre-commit hooks passed; the component hook selected no Python unit/characterization tests. Validation evidence, hook logs and the verified reply are preserved in `/tmp/tl-pr15266-int8-pseudocode-20261116/`. The change has not been pushed.
 
-#### Link the small-K test limit to the tracked reference bug — next item for discussion
+#### Link the small-K test limit to the tracked reference bug — agreed documentation fix
 
 [Tony's inline suggestion](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212035) asks for `(#15764)` beside the float-accumulation limit in the Int8 CMake commentary. The comment currently explains the `2^24` precision limit and K = 151, but lacks the issue link.
 
-**Recommendation, pending discussion:** take Tony's one-line suggestion to link the limit to [#15764](https://github.com/ROCm/rocm-libraries/issues/15764). Keep the current test dimensions while [#15765](https://github.com/ROCm/rocm-libraries/pull/15765) is still pending insertion into the stack; its integer-reduction fix owns the large-K regression coverage. This is a comment change and has not been implemented.
+**Agreed implementation:** applied Tony's exact one-line suggestion to link the limit to [#15764](https://github.com/ROCm/rocm-libraries/issues/15764). The test dimensions remain K = 151 while [#15765](https://github.com/ROCm/rocm-libraries/pull/15765) is pending insertion into the stack. The user also requested a follow-up under #15765 to refresh this description as part of integrating its integer-reduction fix.
+
+**[Reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4590247429):** posted before implementation and verified by reading it back.
+
+> Agreed. I’ll add #15764 to this comment and keep K = 151 for now. I’ll record a follow-up under #15765 to update this description as part of integrating its integer-reduction fix.
+
+**Status:** implemented locally as a CMake comment change. All noncomment CMake lines are identical, preserving test dimensions, arguments and registrations. Scoped root and component pre-commit hooks passed; the component hook selected no Python unit/characterization tests. Validation evidence, hook logs and the verified reply are preserved in `/tmp/tl-pr15266-small-k-link-20261116/`. The change has not been pushed.
+
+#### Refresh the PR's test results and related links — next item for discussion
+
+[Tony's review](https://github.com/ROCm/rocm-libraries/pull/15266#pullrequestreview-5897488069) asks to replace the stale claims that this split branch has not been built/tested and automated checks are pending, and add #15764/#15765 to Related. The live PR body still contains those claims.
+
+**Recommendation, pending discussion:** refresh Test Result with links to the verified passing [Multi-Arch CI Summary](https://github.com/ROCm/rocm-libraries/actions/runs/42914665250/job/130356281758), [Component CI Summary](https://github.com/ROCm/rocm-libraries/actions/runs/42914663179/job/130319662977) and [Math CI Summary](https://math-ci.amd.com/job/rocm-libraries/job/status-gate/job/hipblaslt/job/PR-15266/lastBuild/stages/) for published head `4554dab796dee28e4e640b7f688c4d0f12d5b375`. Record the 390 passing build-tree and relocated-install driver tests for the local review fixes separately, with their commit/evidence references. Add [#15764](https://github.com/ROCm/rocm-libraries/issues/15764) and [#15765](https://github.com/ROCm/rocm-libraries/pull/15765) to Related and explain the planned stack insertion. The successful Math CI `tensilelite-unit-codecov` status alone does not establish which individual cases executed, so do not repeat an unverified case-count claim from the review. This PR-body update has not been made; prepare and show the exact text before publication.
 
 ### Reviews (3)
 
