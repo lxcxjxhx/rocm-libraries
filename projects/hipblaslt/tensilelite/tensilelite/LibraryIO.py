@@ -741,7 +741,8 @@ def parseLibraryLogicData(
             if "InternalSupportParams" in solutionState:
                 isp = solutionState["InternalSupportParams"]
             try:
-                customConfig = getCustomKernelConfig(customKernelName, isp)
+                customConfig = getCustomKernelConfig(
+                    customKernelName, isp, problemType=problemType)
             except (RuntimeError, KeyError, TypeError) as e:
                 printWarning(f"Skipping custom kernel '{customKernelName}': "
                              f"missing or invalid custom.config ({e})")
