@@ -2276,13 +2276,23 @@ Post on #15277, referring to [Newling's non-HPA finding](https://github.com/newl
 
 > @newling, I've taken the non-HPA eligibility guard from [de7815c2e50](https://github.com/newling/rocm-libraries/commit/de7815c2e5066f6b2ff76e589732a3b8a671e402) in #15277. The new regression reproduced the Half and BFloat16 bias-sum differences before the fix; afterward, both requested paths preserve the narrow sums. HPA controls retain fast eligibility and float accumulation, and the eligibility checks cover all three bias sources. All 48 focused reference tests and 795 CPU-driver CTests passed locally. The code is committed locally and has not been pushed. The separate cleanup/error-reporting fix remains tracked in #16120.
 
-##### Numerical-policy wording for the PR description — draft, not published
+##### Numerical-policy wording for the PR description — published November 17
 
-Replace the paragraph beginning “Both are in one PR” with:
+The [published description](https://github.com/ROCm/rocm-libraries/pull/15277) now uses:
 
 > Both are in one PR because they share the test driver's output comparison code. Eligible `useE` and gradient problems are now validated by the fast path. Floating-point epilogue values can differ in their last bits when evaluation order differs. Non-HPA `H_H_H` and `B_B_S` gradient problems with a bias output remain on the slow path, preserving Half/BFloat16 accumulation. HPA means higher-precision accumulation; those configurations remain fast-eligible and reduce in float.
 
-**Next feedback item:** Tony asks to refresh the stale Test Result and report whether the planned gfx950 gradient run happened. The live description still says this split branch has not been built or tested. Recommend reporting verified CI evidence at the published head separately from the local results above, and correcting the Test Plan so the category-based build actually selects the reference gtests. This description update is not applied yet.
+#### Testing description — refreshed on GitHub November 17
+
+**Agreed resolution:** refreshed [#15277's description](https://github.com/ROCm/rocm-libraries/pull/15277) in response to [Tony's review](https://github.com/ROCm/rocm-libraries/pull/15277#pullrequestreview-5897490540). Removed the stale statements that the split branch had not been built or tested. The Test Result now separates published-head CI from local commit `da6ea2191ea5782803b22bdba45832537352e0c0`, explicitly states that shared CI does not cover the unpushed guard, and leaves dedicated gfx950 gradient validation of that local revision pending. Retained the original-branch gfx950 measurements under a historical-results introduction.
+
+**Verified CI evidence:** the GitHub Actions runs report PR head `46ce0b0c3a676b3878f652e4dbf136bdb1f30f9f`. [TheRock gfx942 common tests](https://github.com/ROCm/rocm-libraries/actions/runs/42914664204/job/130385137352) passed 164 configs and skipped 570; the three passing gradient configs were `fp16_gradient_bias.yaml`, `fp16_gradient_activation.yaml` and `fp8bf8nss_gradient_bias_b.yaml`. [gfx1250-strict common tests](https://github.com/ROCm/rocm-libraries/actions/runs/42914662388/job/130174079118) reported 236 passed, 482 skipped and 16 expected failures, with a successful job. [Math CI C++ coverage build 7](https://math-ci.amd.com/job/rocm-libraries/job/tensilelite-unit-codecov/job/hipblaslt/job/PR-15277/7/) reported 1,674 passed CTests, 4 skipped and 1 disabled, with no failures. Its tested merge was `103c270621709258b11dd7fa5daff5cadb0b4ab9`, combining the published PR head with the then-current #15276 base `d72ce11dbab4b6ad1f84b42e0350e542dfac0749`.
+
+**Test Plan correction:** the description now builds the three relevant targets, runs the standard `CPUGemm.*` CTests and invokes the reference gtests directly with `--gtest_filter='ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*'`. This avoids a CTest regex that misses the gtests in category-based builds. Updated the test summary to include the three new accumulation/eligibility tests, for eight gtests added by this PR, and published the agreed numerical-policy paragraph above.
+
+**Publication verification:** showed the exact changed text, checked the live body/head/base against the preparation snapshot, patched only the PR body and read it back. Asserted exact equality with the prepared Markdown and unchanged remote head `46ce0b0c3a676b3878f652e4dbf136bdb1f30f9f` and base `users/alvasile/tl-speedup-26-reference-fast-path-complex`. The code was not pushed and the non-HPA replies remain drafts. Exact before/after bodies, the prepared description and CI logs are saved in `/tmp/tl-pr15277-non-hpa-20261117/`.
+
+**Next feedback item:** Tony asks for “Depends on #15276” in Related. The live Related section still contains only the work-tracking reference. Recommend adding `- Depends on #15276: [complex CPU-reference fast path](https://github.com/ROCm/rocm-libraries/pull/15276).` This is a documentation link to the existing direct dependency; no source or stack-order change is needed. The link has not been added yet.
 
 ### Reviews (1)
 
