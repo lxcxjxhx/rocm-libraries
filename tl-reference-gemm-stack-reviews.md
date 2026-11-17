@@ -1888,20 +1888,41 @@ Other results recorded on the original branch, same host:
 
 **Agreed implementation:** removed exactly that sentence from #15276's GitHub description and verified that the full body matched the proposed text on read-back. Recorded the agreement here. The remaining non-finite behavior statement is unchanged and remains available for its own assessment. No production code changed, no code was pushed and no reply was posted. The published head remains `5b4f85f05f2977d06f67cf5405eff41da6800f93`. Before/after descriptions and the PATCH/read-back records are saved under `/tmp/tl-pr15276-description-alpha0-20261117/`.
 
-#### Link the direct dependency on #15275 — next item for discussion
+#### Link the direct dependency on #15275 — published
 
-[Tony's third description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) asks for a “Depends on #15275” line in Related. The current GitHub description has only the work-tracking entry there.
+[Tony's third description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) asks for a “Depends on #15275” line in Related. The pre-update GitHub description had only the work-tracking entry there.
 
 **Verified relationship:** #15276's base is `users/alvasile/tl-speedup-25-reference-fast-path-float8-output`, the open [#15275](https://github.com/ROCm/rocm-libraries/pull/15275). It remains the immediate dependency in the planned stack, including after the earlier correctness PRs are inserted below it.
 
-**Recommendation, pending discussion:** add the following line under Related, retaining the work-tracking entry:
+**Agreed implementation:** added the following line under Related on GitHub, retaining the work-tracking entry:
 
 ```markdown
 - Depends on [#15275](https://github.com/ROCm/rocm-libraries/pull/15275).
 ```
 
-This is a description link; no source or stack-order change is needed. The dependency line has not been added on GitHub.
+Verified that the full GitHub body matched the proposed text on read-back. The published head and base are unchanged; no code was pushed and no review reply was posted. Before/after descriptions and the PATCH/read-back records are saved under `/tmp/tl-pr15276-description-dependency-20261117/`.
 
+#### Correct the manual command so it runs the reference gtests — next item for discussion
+
+[Newling's initial linked review, Tests section](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15276.md#tests) notes that a CTest name regex containing `ReferenceFastPath` does not select those gtests in a category-based build. #15276's current Test Plan still uses `ctest ... -R 'CPUGemm|ReferenceFastPath|ReferenceMXFastPath'` and claims it runs both the CPU driver tests and fast-path gtests.
+
+**Verified selection:** the documented CTest filter selects **729 CPU driver tests and zero gtest categories** in the existing review build. Calling `tensilelite-tests` directly with `ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*` selects **40 gtests**, including the complex in-place regression and six parameterized MX free-tile cases. All 40 passed in a fresh run. The six parameterized cases were outside the earlier 41-test filter, so this run supplies their current local validation. The earlier 41-test result remains an accurate report of its selected tests. Discovery records and the new XML/log are saved under `/tmp/tl-pr15276-description-dependency-20261117/`.
+
+**Recommendation, pending discussion:** retain the configure/build steps, then document the CPU driver CTest and direct gtest runs separately:
+
+```bash
+export OMP_NUM_THREADS=4 OMP_THREAD_LIMIT=8 OMP_DYNAMIC=FALSE KMP_BLOCKTIME=0
+ctest --test-dir "$BUILD/tensilelite/tests" --output-on-failure \
+  -R '^CPUGemm[.]' --no-tests=error
+"$BUILD/tensilelite/tests/tensilelite-tests" \
+  --gtest_filter='ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*'
+```
+
+The gtests' existing standard-tier registration and #15259's local installed-suite integration already cover their shared-CI execution. This item corrects the manual Test Plan. The GitHub Test Plan has not been edited yet.
+
+**Other linked suggestions already satisfied:** the local restack preserved #15266's shared `TypeInfo` metadata and migrated the later complex helper; there is no private `TypeTraits` table. All seven complex option rejections now use the common `EXPECTED_ERROR` helper and name the unsupported option or combination. They passed in the 729-driver run. E/gradient checks introduced by later branches remain for those branches' walkthroughs.
+
+**Feedback refresh:** a fresh GitHub read found Tony's existing approval review, no inline comments and no human discussion comments on #15276. Bots remain outside the walkthrough per the user's earlier instruction. The immutable linked reviews are preserved below.
 
 ### Reviews (1)
 
