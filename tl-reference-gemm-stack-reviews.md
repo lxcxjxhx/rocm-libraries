@@ -28,7 +28,7 @@ Future work includes planned additions to [stack #15515](https://github.com/ROCm
 
 ### 1. AMAX-D fast path — new PR at the end of the stack
 
-- [ ] Implement AMAX-D support in the CPU reference fast path as a new PR added to the top of this stack, after the existing final PR [#15278](https://github.com/ROCm/rocm-libraries/pull/15278).
+- [ ] Implement AMAX-D support in the CPU reference fast path as a new PR added to the top of this stack, after [#15278](https://github.com/ROCm/rocm-libraries/pull/15278) and the bias-gradient correctness follow-up below.
 
 **Resolution for #15259:** [newling’s request to add AMAX-D to the fast path](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5879565945) will be handled by this new PR in the same stack. Keep #15259 focused on the slow-path lock and per-thread maximum change. The fast-path feature is planned; it has not been implemented by this resolution.
 
@@ -49,7 +49,7 @@ The intended branch order is `users/alvasile/tl-speedup-09-reference-slow-path-a
 
 At the November 16 check, #15765 already targets the #15259 branch, but it is absent from the GitHub stack membership and #15266 still targets #15259 directly. Add #15765 to the stack, make #15266 target #15765’s branch, and restack the remaining descendants in their existing order.
 
-Planned order, bottom → top: **#15259 → #15765 → #15266 → #15274 → new Float8 scaling correctness PR → #15275 → #15276 → #15277 → #15278 → new AMAX-D fast-path PR**.
+Planned order, bottom → top: **#15259 → #15765 → #15266 → #15274 → new Float8 scaling correctness PR → #15275 → #15276 → #15277 → #15278 → new bias-gradient correctness PR → new AMAX-D fast-path PR**.
 
 ### 3. OpenMP-aware race detection for the AMAX-D merge — AIHPBLAS-5035
 
@@ -79,6 +79,16 @@ The new PR owns the slow-reference Vector correction and the GPU `MultipleBuffer
 **Implemented and committed locally:** commit `6d06af3ff59c224c92a468920120797edd2212fa` on `users/alvasile/tl-fix-float8-input-scaling`. The new branch is based on local #15274 at `d6af002f7a656236440771e1dfbc1eb69080f5ac`. Both new regressions were observed failing before their respective fixes, then passing. The final run passed 61 reference/argument gtests, including six new tests, and all 468 CPU-driver CTests. All 2,304 independent CPU cases pass on this base, where Float8 output remains fast-ineligible. The patched production runtime passed all 1,728 gfx942 GPU cases without the prototype's invocation replacement; the prior 32 failures are fixed and the other 1,696 numerical output arrays match baseline. Grouped argument construction is tested; grouped GPU execution has not been run. Evidence: [local reproduction and results](/tmp/tl-float8-scaling-fix-20261116/README.md) and [summary](/tmp/tl-float8-scaling-fix-20261116/summary.json).
 
 No issue or PR has been created, and the correctness branch has not been inserted into the stack. The Scalar guard on #15275 is implemented locally. The November 17 restack through #15276 preserves the deferred correctness branch at its original commit. Shared-CI/final-production gfx950 validation and actual stack insertion remain outstanding.
+
+### 6. Bias-gradient reduction cleanup — new correctness PR at the top of the stack
+
+- [ ] File the prepared GitHub issue for the pre-existing slow-reference double-free and discarded reduction errors discovered during [#15277's review](https://github.com/ROCm/rocm-libraries/pull/15277). The issue and reply texts are prepared; publication awaits approval of the exact wording.
+- [ ] Create a separate correctness PR using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d), sharing `reduceBiasGradient` between the reference paths, giving the workspace automatic ownership and propagating reduction errors for A, B and D bias sources.
+- [ ] Add that PR at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), after its existing final PR [#15278](https://github.com/ROCm/rocm-libraries/pull/15278). The planned AMAX-D fast-path PR remains a later final addition.
+- [ ] Include a closing reference to the new issue and link #15277 as the discovery PR. Preserve the current single-batch reduction limitation; add no batched bias-gradient implementation.
+- [ ] Add `BatchedBiasGradientReportsUnsupportedShape` for A/B/D through both requested paths, verifying the diagnostic and unchanged bias. Demonstrate the regression failing before and passing after the fix, and require shared-CI execution.
+
+**Agreed resolution for #15277:** handle these inherited cleanup/error-reporting defects in the separate top-of-stack PR. [Tony's comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216) and [Newling's linked review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items) will receive replies linking the issue and this plan. The current source still contains the defect until the follow-up is integrated. The non-HPA accumulation finding is a separate feedback item.
 
 <a id="pr-15259"></a>
 
@@ -2199,6 +2209,44 @@ Source revision: `ede5c5f065835ae571ce0647b4e07af2c6cb8d64`. File: `rocm-librari
 [GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15277) · State: **OPEN**
 
 Branch: `users/alvasile/tl-speedup-27-reference-fast-path-use-e-gradient`. Base: `users/alvasile/tl-speedup-26-reference-fast-path-complex`. Head at collection: `46ce0b0c3a676b3878f652e4dbf136bdb1f30f9f`.
+
+### Feedback walkthrough — November 17, 2026
+
+#### Unsupported bias-gradient cleanup — agreed separate correctness PR
+
+**Assessment:** this defect predates #15277. Verified the discarded exceptions and D-workspace double-free at #15277's submitted head and in its published #15276 base (`5b4f85f05f2977d06f67cf5405eff41da6800f93`). Newling's patch addresses all A/B/D reduction errors using the existing helper and automatic workspace ownership. No new local reproducer or sanitizer run was performed in this walkthrough.
+
+**Agreed resolution:** file a GitHub issue tied to #15277, reply to Tony and Newling explaining that this is pre-existing, and create a separate correctness PR at the top of this stack using Newling's suggestion. That PR must close the issue and carry direct-reference regression coverage. See [Future work](#future-work), item 6. The fix is deferred; this record does not mark the production defect resolved.
+
+##### Prepared GitHub issue — publication pending exact-text approval
+
+**Title:** [TensileLite] Unsupported bias-gradient reductions double-free workspace or discard errors
+
+Found while reviewing [#15277](https://github.com/ROCm/rocm-libraries/pull/15277) at `46ce0b0c3a676b3878f652e4dbf136bdb1f30f9f`. This is a pre-existing slow-reference defect: the [faulty code is already present in its published base](https://github.com/ROCm/rocm-libraries/blob/5b4f85f05f2977d06f67cf5405eff41da6800f93/projects/hipblaslt/tensilelite/client/src/Reference.cpp#L2642).
+
+When `ReductionCPU` returns an unsupported-shape error, the slow reference constructs `std::runtime_error` without throwing it. The D-source branch frees its workspace before discarding the error and later frees it again. The A/B branches also discard their errors.
+
+Reproducer: call `SolveGemmCPU` directly for a Float GEMM with M=N=K=1, two batches, A=B=1, C=0, alpha=1, beta=0, gradients enabled and a bias-gradient output initialized to 99. Select D, A or B as the bias source and try both execution preferences. Newling's direct probe reports a double-free abort for D; A/B return without reporting the unsupported shape. The driver rejects this combination before reaching the reference, so the regression must call the reference directly.
+
+Expected: a clear unsupported-shape exception, unchanged bias and no double-free. The existing reduction limitation remains: a 2-D tensor or a 3-D tensor with one batch.
+
+Fix plan: create a separate PR at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), after #15278, using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). Share `reduceBiasGradient`, give the workspace automatic ownership and propagate reduction errors. Include direct-reference regressions for A/B/D with both execution preferences, demonstrate failure before and success after the fix, and run them in shared CI. The new PR will close this issue.
+
+Related feedback: [Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216) and [Newling's linked correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items).
+
+##### Draft reply to Tony — publication pending
+
+Reply to [Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216):
+
+> This is a pre-existing slow-reference issue, also present below #15277. We will track it in <ISSUE_URL> and handle it in a separate PR added at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). That PR will fix the double-free and discarded reduction errors, add direct-reference regressions, and close the issue.
+
+##### Draft reply to Newling — publication pending
+
+Post on #15277, addressed to Newling and identifying the cleanup finding from his stack-level linked review:
+
+> @newling, regarding the cleanup finding in your linked #15277 review:
+>
+> This is a pre-existing slow-reference issue, also present below #15277. We will track it in <ISSUE_URL> and handle it in a separate PR added at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). That PR will fix the double-free and discarded reduction errors, add direct-reference regressions, and close the issue.
 
 ### Reviews (1)
 
