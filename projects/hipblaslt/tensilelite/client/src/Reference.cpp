@@ -1329,6 +1329,9 @@ namespace TensileLite
                 = isComplexType(problem.a().dataType()) || isComplexType(problem.b().dataType())
                   || isComplexType(problem.c().dataType()) || isComplexType(problem.d().dataType());
 
+            if(isComplex && problem.outputAmaxD())
+                return rejectFast("AMAX-D output is not supported for complex inputs");
+
             if(!isInt8Input && !isFloat8Output && !isComplex
                && (!isSupportedInputType(problem.a().dataType())
                    || !isSupportedInputType(problem.b().dataType())
@@ -1404,11 +1407,6 @@ namespace TensileLite
                    && !isBiasReductionShapeSupported(problem.tensor(src)))
                     return rejectFast(
                         "bias-gradient reduction requires a 2-D tensor or a single batch");
-            }
-
-            if(problem.outputAmaxD())
-            {
-                return rejectFast("AMAX-D output is not supported by the fast path");
             }
 
             // With useE, the slow path requires equal alpha and beta types
@@ -1993,6 +1991,11 @@ namespace TensileLite
             auto mTiles = (sizeM / BLOCK_M + (sizeM % BLOCK_M != 0));
             auto kTiles = (sizeK / BLOCK_K + (sizeK % BLOCK_K != 0));
 
+            // Each worker owns one maximum; merge after the parallel region.
+            std::vector<AccumT> threadAmaxD;
+            if(problem.outputAmaxD())
+                threadAmaxD.resize(omp_get_max_threads(), AccumT(0));
+
 // Perform the contraction.
 // Parallelize over the 3 non-reduction dimensions: batch, M, and N.
 // Each thread computes a BLOCK_M x BLOCK_N tile.
@@ -2023,6 +2026,7 @@ namespace TensileLite
                         std::array<MacT, BLOCK_M * BLOCK_K> aReg = {0};
                         std::array<MacT, BLOCK_K * BLOCK_N> bReg = {0};
                         std::array<MacT, BLOCK_M * BLOCK_N> cReg = {0};
+                        AccumT                              tileAmaxD(0);
 
                         if(doContraction && hasMX)
                         {
@@ -2269,6 +2273,19 @@ namespace TensileLite
                                                              actArgs);
                                     }
 
+                                    // Match the slow path: post-activation/gradient,
+                                    // before ScaleD, gate residual and the D cast.
+                                    if constexpr(!TypeInfo<AccumT>::IsComplex)
+                                    {
+                                        if(problem.outputAmaxD())
+                                        {
+                                            AccumT magnitude
+                                                = current > AccumT(0) ? current : -current;
+                                            if(magnitude > tileAmaxD)
+                                                tileAmaxD = magnitude;
+                                        }
+                                    }
+
                                     if(biasGradientFromD)
                                         curBatchWs[idxD] = current;
 
@@ -2287,7 +2304,32 @@ namespace TensileLite
                                 }
                             }
                         }
+                        if constexpr(!TypeInfo<AccumT>::IsComplex)
+                        {
+                            if(problem.outputAmaxD())
+                            {
+                                auto& workerMax = threadAmaxD[omp_get_thread_num()];
+                                if(tileAmaxD > workerMax)
+                                    workerMax = tileAmaxD;
+                            }
+                        }
                     }
+                }
+            }
+
+            if constexpr(!TypeInfo<AccumT>::IsComplex)
+            {
+                if(problem.outputAmaxD())
+                {
+                    AccumT amaxD(0);
+                    for(auto const& workerMax : threadAmaxD)
+                        if(workerMax > amaxD)
+                            amaxD = workerMax;
+                    SetValue<AccumT>(
+                        problem.tensors()[ContractionProblemGemm::TENSOR::AMAXD].dataType(),
+                        amaxD,
+                        inputs.amaxD,
+                        0);
                 }
             }
 
