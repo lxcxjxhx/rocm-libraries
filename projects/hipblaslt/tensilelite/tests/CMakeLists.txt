@@ -20,6 +20,7 @@ target_sources(tensilelite-tests
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/AlmostEqual_test.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/BenchmarkDatabase_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/BenchmarkTimer_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/CachingLibrary_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/ContractionSelectionLibrary_test.cpp"
@@ -28,6 +29,12 @@ target_sources(tensilelite-tests
         "${CMAKE_CURRENT_SOURCE_DIR}/CustomKernel_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/DataTypes_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/DataInit_test.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/BenchmarkDatabaseSetup_test.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/DatabaseReporter_test.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/BenchmarkRecording_test.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/BenchmarkCsvParity_test.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ProgramOptionsSerialize_test.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/SqliteDatabase_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/DeviceContext_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/ExactLogicLibrary_test.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/FusedA2AKernArg_test.cpp"
@@ -93,6 +100,11 @@ target_include_directories(tensilelite-tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR
 target_include_directories(tensilelite-tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../clients/common/include")
 target_include_directories(tensilelite-tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../client/include")
 
+# The CSV parity fixtures are read from the source tree.
+target_compile_definitions(tensilelite-tests
+    PRIVATE
+        BENCHMARK_DB_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/benchmark_db")
+
 target_link_libraries(tensilelite-tests
     PUBLIC
         roc::tensilelite-host
@@ -110,6 +122,11 @@ if(HIPBLASLT_ENABLE_MXDATAGENERATOR)
             "${CMAKE_CURRENT_SOURCE_DIR}/MXDataGen_test.cpp"
     )
     target_link_libraries(tensilelite-tests PRIVATE hipblaslt::mxdatagen)
+endif()
+
+# The spec round-trip test packs a msgpack document by hand.
+if(tensilelite_msgpack_target)
+    target_link_libraries(tensilelite-tests PRIVATE ${tensilelite_msgpack_target})
 endif()
 
 target_link_libraries(tensilelite-tests PUBLIC GTest::gtest)

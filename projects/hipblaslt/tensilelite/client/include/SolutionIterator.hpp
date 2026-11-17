@@ -175,6 +175,9 @@ namespace TensileLite
             virtual std::shared_ptr<ContractionSolution> getSolution() override;
             virtual bool                                 runCurrentSolution() override;
 
+            int firstSolutionIdx() const { return m_firstSolutionIdx; }
+            int lastSolutionIdx() const  { return m_lastSolutionIdx; }
+
         private:
             std::vector<std::shared_ptr<ContractionSolution>> m_solutions;
             std::queue<std::pair<int,double>>                 m_qSolutionIdx;

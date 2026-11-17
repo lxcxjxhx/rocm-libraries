@@ -46,6 +46,33 @@ if(TENSILELITE_ENABLE_SDMA AND NOT WIN32)
     hipblaslt_sanitize_hsakmt_link_interface()
 endif()
 
+# The benchmark database needs SQLite. Look for TheRock's vendored config
+# package first: CMake's built-in FindSQLite3 module would otherwise win in
+# module mode, and it needs a header on the default search path that ROCm
+# containers do not have. Fall back to the distro library.
+if(DEFINED ROCM_PATH)
+    set(tensilelite_sqlite_rocm_path "${ROCM_PATH}")
+elseif(DEFINED ENV{ROCM_PATH})
+    set(tensilelite_sqlite_rocm_path "$ENV{ROCM_PATH}")
+else()
+    set(tensilelite_sqlite_rocm_path "/opt/rocm")
+endif()
+find_package(SQLite3 CONFIG QUIET
+    PATHS "${tensilelite_sqlite_rocm_path}/lib/rocm_sysdeps"
+    NO_DEFAULT_PATH)
+if(NOT SQLite3_FOUND)
+    find_package(SQLite3 QUIET)
+endif()
+if(NOT SQLite3_FOUND)
+    message(FATAL_ERROR
+        "SQLite3 not found. Looked for the ROCm-vendored config package in "
+        "${tensilelite_sqlite_rocm_path}/lib/rocm_sysdeps/lib/cmake/SQLite3 and for a system "
+        "libsqlite3 and sqlite3.h in the default system paths. Set ROCM_PATH "
+        "to a ROCm install that ships SQLite, or install the system SQLite "
+        "development package.")
+endif()
+message(STATUS "Found SQLite3 for the benchmark database: SQLite::SQLite3")
+
 target_link_libraries(tensilelite-client-common
     PUBLIC
         hip::device
@@ -53,6 +80,7 @@ target_link_libraries(tensilelite-client-common
         roc::tensilelite-host
         rocisa::rocisa-cpp
         OpenMP::OpenMP_CXX
+        SQLite::SQLite3
 )
 if(amd_smi_FOUND)
     target_link_libraries(tensilelite-client-common PUBLIC amd_smi)
@@ -130,6 +158,17 @@ target_link_libraries(tensilelite-client PRIVATE tensilelite-client-common)
 add_executable(cpu-gemm-driver "${CMAKE_CURRENT_SOURCE_DIR}/cpu_gemm_driver.cpp")
 target_link_libraries(cpu-gemm-driver PRIVATE tensilelite-client-common)
 
+# Warm-up helper run by the benchmark supervisor after a client crash. It stays
+# independent of the client's libraries on purpose.
+add_executable(tensilelite-gpu-probe "${CMAKE_CURRENT_SOURCE_DIR}/gpu_probe.cpp")
+target_link_libraries(tensilelite-gpu-probe PRIVATE hip::device hip::host)
+set_target_properties(tensilelite-gpu-probe
+    PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+)
+
 # rocprofiler-sdk is only used by tensilelite-client (in-process counters).
 if(TENSILELITE_CLIENT_ENABLE_ROCPROFSDK)
     target_link_libraries(tensilelite-client PRIVATE rocprofiler-sdk)
@@ -158,7 +197,7 @@ option(TENSILELITE_CLIENT_FORCE_RPATH
 if(TENSILELITE_CLIENT_FORCE_RPATH AND UNIX AND NOT APPLE)
     find_program(TENSILELITE_PATCHELF patchelf)
     if(TENSILELITE_PATCHELF)
-        foreach(_client IN ITEMS tensilelite-client cpu-gemm-driver)
+        foreach(_client IN ITEMS tensilelite-client cpu-gemm-driver tensilelite-gpu-probe)
             add_custom_command(TARGET ${_client} POST_BUILD
                 COMMAND sh -c "r=$(\"$0\" --print-rpath \"$1\") || exit 1; [ -z \"$r\" ] || exec \"$0\" --force-rpath --set-rpath \"$r\" \"$1\""
                         "${TENSILELITE_PATCHELF}" "$<TARGET_FILE:${_client}>"
