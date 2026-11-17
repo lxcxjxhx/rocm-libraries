@@ -1880,13 +1880,28 @@ Other results recorded on the original branch, same host:
 - All `CPUGemm.*` tests passed (700, at 1, 3, 4 and 32 threads); full CTest 1356 of 1356. The 647 earlier `CPUGemm` commands gave the same output.
 ```
 
-#### Remove the incorrect alpha-zero distinction — next item for discussion
+#### Remove the incorrect alpha-zero distinction — published
 
-[Tony's second description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) points out that the fast path also skips the K reduction when alpha is zero. The current description still says: “With `alpha == 0`, the slow path skips the K loop, while the fast path computes `0 * sum`.”
+[Tony's second description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) points out that the fast path also skips the K reduction when alpha is zero. The pre-update description said: “With `alpha == 0`, the slow path skips the K loop, while the fast path computes `0 * sum`.”
 
 **Verified source:** at the published SHA, [Reference.cpp:1708](https://github.com/ROCm/rocm-libraries/blob/5b4f85f05f2977d06f67cf5405eff41da6800f93/projects/hipblaslt/tensilelite/client/src/Reference.cpp#L1708) sets `doContraction` from `effectiveAlpha != AccumT(0)`. The A/B shadow copies are guarded by that flag at line 1733, and the ordinary K loop is guarded at line 1932. The tile sum starts at zero at line 1870. The local restacked source retains the same guards. Thus, when the selected alpha is zero, the fast path skips A/B contraction as the slow path does.
 
-**Recommendation, pending discussion:** remove that one sentence from the behavior-change paragraph. No production change is required for this feedback. Keep the separate non-finite behavior statement for its own assessment. The alpha-zero sentence has not been edited on GitHub.
+**Agreed implementation:** removed exactly that sentence from #15276's GitHub description and verified that the full body matched the proposed text on read-back. Recorded the agreement here. The remaining non-finite behavior statement is unchanged and remains available for its own assessment. No production code changed, no code was pushed and no reply was posted. The published head remains `5b4f85f05f2977d06f67cf5405eff41da6800f93`. Before/after descriptions and the PATCH/read-back records are saved under `/tmp/tl-pr15276-description-alpha0-20261117/`.
+
+#### Link the direct dependency on #15275 — next item for discussion
+
+[Tony's third description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) asks for a “Depends on #15275” line in Related. The current GitHub description has only the work-tracking entry there.
+
+**Verified relationship:** #15276's base is `users/alvasile/tl-speedup-25-reference-fast-path-float8-output`, the open [#15275](https://github.com/ROCm/rocm-libraries/pull/15275). It remains the immediate dependency in the planned stack, including after the earlier correctness PRs are inserted below it.
+
+**Recommendation, pending discussion:** add the following line under Related, retaining the work-tracking entry:
+
+```markdown
+- Depends on [#15275](https://github.com/ROCm/rocm-libraries/pull/15275).
+```
+
+This is a description link; no source or stack-order change is needed. The dependency line has not been added on GitHub.
+
 
 ### Reviews (1)
 
