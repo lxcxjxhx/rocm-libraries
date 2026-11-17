@@ -352,6 +352,19 @@ workgroup_mapping_t predict_workgroup_mapping(const problem_t& problem,
     return predict_workgroup_mapping_cdna5(
         problem, hardware, config, grid_m, grid_n, splitting_factor);
 
+  // A TensileLite kernel without StreamK launches with its own mapping, as
+  // ContractionSolution::calculateAutoWGM picks it: the fixed WorkGroupMapping, or
+  // ceil(sqrt(N_CU / NUM_XCD)) for WGM 0.  Only a StreamK auto mapping is re-picked per problem.
+  if (config.has_tensile_params() && config.stream_k == 0) {
+    const size_t num_xcd = std::max<size_t>(hardware.NUM_XCD, 1);
+    const int xcc        = tparams(config).workgroup_mapping_xcc;
+    const int wgm        = (config.workgroup_mapping != 0)
+                               ? config.workgroup_mapping
+                               : static_cast<int>(std::ceil(
+                                     std::sqrt(static_cast<double>(hardware.N_CU / num_xcd))));
+    return {0, 0, (xcc == -1) ? num_xcd : static_cast<size_t>(std::max(xcc, 0)), wgm};
+  }
+
   // Extract parameters
   const size_t batch = problem.batch;
 
@@ -1870,8 +1883,13 @@ double compute_memory_latency(const problem_t& problem,
   double dram_bw    = hardware.mem3_perf_ratio * bw_limited;
   double L_mem_dram = (dram_bw > 0) ? (Ld_dram / dram_bw) : 0.0;
 
-  // 9) Worst-case across all memory levels
-  double L_mem = std::max({L_mem_l2, L_mem_mall, L_mem_dram});
+  // 9) Worst-case across all memory levels.  A K-iteration's loads are all in flight together,
+  // so one that is served from the caches still takes a load round trip on top of its L2
+  // transfer; a MALL- or DRAM-bound stream overlaps that latency.
+  const double L_load_latency = (hardware.arch == hardware_t::architecture_t::gfx1151)
+                                    ? heuristic_defaults_t::GFX1151_LOAD_LATENCY_CYCLES
+                                    : 0.0;
+  double L_mem = std::max({L_mem_l2 + L_load_latency, L_mem_mall, L_mem_dram});
 
   if (debug) {
     OLOG_DEBUG("Ld_CU_bytes: " << Ld_CU_bytes);
@@ -1882,6 +1900,7 @@ double compute_memory_latency(const problem_t& problem,
     OLOG_DEBUG("L_mem_l2: " << L_mem_l2);
     OLOG_DEBUG("L_mem_mall: " << L_mem_mall);
     OLOG_DEBUG("L_mem_dram: " << L_mem_dram);
+    OLOG_DEBUG("L_load_latency: " << L_load_latency);
   }
 
   return L_mem;
@@ -2483,11 +2502,14 @@ double compute_tile_latency(const problem_t& problem,
   // ---------------------------------------------------------------------------
 
   // L_main — steady-state main iters with load + compute overlap.  Falls
-  // back to additive (non-overlapped) mode when pgr <= 1.
+  // back to additive (non-overlapped) mode when pgr <= 1.  On gfx1151 a PGR 1 kernel was
+  // measured to overlap as well (full kernel time = compute-only time).
+  const bool additive_iter =
+      pgr <= 0 || (pgr == 1 && hardware.arch != hardware_t::architecture_t::gfx1151);
   const double L_mem_stream         = L_mem * static_cast<double>(num_main_iters);
   const double L_compute_stream     = L_compute * static_cast<double>(num_main_iters);
   const double L_compute_stream_eff = L_compute_stream * compute_tile_penalty;
-  double L_main = (pgr <= 1)
+  double L_main = additive_iter
       ? (L_mem_stream + L_compute_stream_eff)
       : std::max(L_mem_stream, L_compute_stream_eff);
   L_main += L_latency_iter * static_cast<double>(num_main_iters);
@@ -2505,7 +2527,7 @@ double compute_tile_latency(const problem_t& problem,
   // waste charge further down, which is calibrated against the full edge
   // penalty, sub-MFMA waste included.
   const double L_main_per_iter =
-      (pgr <= 1) ? (L_mem + L_compute * effective_tile_penalty) * eff_scale +
+      additive_iter ? (L_mem + L_compute * effective_tile_penalty) * eff_scale +
                        L_cvt * effective_tile_penalty
                  : std::max(L_mem, L_compute * effective_tile_penalty) * eff_scale +
                        L_cvt * effective_tile_penalty;
