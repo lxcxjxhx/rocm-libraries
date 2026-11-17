@@ -2,7 +2,7 @@
 
 Snapshot collected: 2026-11-16 15:12:53 UTC.
 
-Stack: [#15515](https://github.com/ROCm/rocm-libraries/stack/15515), listed bottom → top. The worktree checks out `users/alvasile/tl-speedup-09-reference-slow-path-amax-d` at `571ecae3fc4814ff951461d1d14e48f780975511`.
+Stack: [#15515](https://github.com/ROCm/rocm-libraries/stack/15515), listed bottom → top. At collection, the worktree checked out `users/alvasile/tl-speedup-09-reference-slow-path-amax-d` at `571ecae3fc4814ff951461d1d14e48f780975511`.
 
 This archive contains **12 review submissions, 21 general comments, and 15 inline comments in 14 threads**, plus **14 per-PR review documents and one shared assessment** linked by newling. Review bodies, replies, suggestions, and bot comments are copied in full. Empty review bodies retain their submission metadata. Thread resolution and outdated status are recorded as returned by GitHub.
 
@@ -24,92 +24,134 @@ Newling’s two posts on #15259 contain reviews of all seven PRs: [initial round
 
 ## Future work
 
-Future work includes planned additions to [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), integration, validation and publication.
+### Local implementation and integration — completed November 17, 2026
 
-### Remaining execution checklist — updated November 17, 2026
+All agreed source changes are committed locally, and the stack has been rebased onto fetched develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`. The validated code tip is `4135e6d96f2df606404ab51af3214a8b2f4a3427`. The main checkout and its develop branch remain at `1598298cf22ff879e3bb59b5b3f0bf3b9b3df265`. No GitHub issue, PR, reply, description or thread was changed during this implementation, and no code was pushed.
 
-1. Insert #15765 between #15259 and #15266 and update its description with the downstream integration responsibilities.
-2. Apply #15266's documentation and large-K coverage follow-ups after it inherits #15765.
-3. Apply #15274's fast/slow exact-sum regression and integer-reduction comment updates after it inherits #15765.
-4. File the Float8 input-scaling bug issue, linking #15275 and the gfx942/gfx950 numerical evidence.
-5. Create the already implemented Float8 correctness PR and insert it between #15274 and #15275.
-6. Implement the bias-gradient cleanup correctness PR above #15278, with regressions and `Fixes #16120`.
-7. Implement the AMAX-D fast-path PR at the end of the stack and replace the AMAX-D rejection test with positive coverage.
-8. Complete the OpenMP setter-cleanup integration through #15257, preserving #15259's synchronized AMAX-D merge.
-9. Restack the inserted PRs and descendants, preserving ordering, ownership and inherited review fixes.
-10. Run the integrated build-tree/installed CPU suites and remaining GPU validation, including the production Float8 fix on gfx950, grouped GPU execution, the non-HPA gradient guard and final MX-tail coverage. Verify required shared-CI execution when the code is published.
-11. Before code publication, fetch the newest head of `develop` and run `gh stack rebase` onto it. Record the fetched and rebased trunk SHAs, resolve any conflicts and repeat checks affected by the rebase. This step includes trunk rebasing.
-12. Publish the local review fixes and new PR branches when code publication is authorized.
-13. Publish the remaining description drafts and replies, then refresh results against the final published heads.
-14. Verify and resolve addressed review threads and obtain final reviewer sign-off, retaining issue/PR links for deferred work.
+- [x] Integrate #15257's OpenMP setter deletion below #15259, retaining the slow path's per-thread maximum and synchronized merge.
+- [x] Insert #15765 locally between #15259 and #15266.
+- [x] Apply #15266's branch-owned oracle/documentation corrections and large-K coverage: K=1044 for six Int8 combinations and four layouts. Ordinary cases use F32 sizes; integer-alpha ScaleAB cases keep smaller sizes within the driver's checked Int32 epilogue range.
+- [x] Apply #15274's exact-sum test to both paths, asserting 16,790,292 and retaining the old float-summation witness. Preserve the C/D alias correction. Scope defined modulo-2^32 wrapping to the fast reduction and corrected slow float-alpha reduction; inherited slow integer-alpha arithmetic remains unchanged.
+- [x] Insert the existing Float8 correctness branch between #15274 and #15275 and restack every descendant. Preserve #15275's Scalar-only narrowing fallback and Vector eligibility, including its helper rename.
+- [x] Implement and commit the bias-gradient cleanup above #15278, using Newling's suggestion and regressions; its PR will close #16120.
+- [x] Implement and commit AMAX-D support at the end of the stack. Replace the old AMAX-D rejection test with positive coverage and retain diagnostic coverage using Scalar Half-to-Float8 narrowing.
+- [x] Fetch develop and run `gh stack rebase --remote origin`; the final fetched and rebased trunk is `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`. Preserve the main develop checkout, verify ancestry, and rerun the affected build/tests.
+- [x] Complete integrated build-tree/installed CPU checks and gfx942 nongrouped/grouped GPU execution, including the non-HPA gradient guard and MX-tail host tests.
+- [x] Prepare [complete publication drafts](tl-reference-gemm-publication-drafts.md) for the Float8 issue, three new PRs, eight existing descriptions, remaining review replies and new integration replies.
 
-The AMAX-D race-detector follow-up was removed from this remaining-work plan at the user's request on November 17. Earlier posted review replies and ticket comments remain historical records.
+Local branch order, bottom to top:
 
-### 1. AMAX-D fast path — new PR at the end of the stack
+| PR | Branch | Local code head |
+| --- | --- | --- |
+| [#15257](https://github.com/ROCm/rocm-libraries/pull/15257) | `users/alvasile/tl-speedup-07-client-openmp-runtime-policy` | `3b0923a82c82586559c41db86b01a315a1ba45c2` |
+| [#15259](https://github.com/ROCm/rocm-libraries/pull/15259) | `users/alvasile/tl-speedup-09-reference-slow-path-amax-d` | `7fadc6a06dd9e9d3fa82ddea6556a3beb3a1010f` |
+| [#15765](https://github.com/ROCm/rocm-libraries/pull/15765) | `users/alvasile/fix-int8-slow-reference-accumulation` | `8d6f17d0fdcab834fa9eda9f25756b3a4eb2a817` |
+| [#15266](https://github.com/ROCm/rocm-libraries/pull/15266) | `users/alvasile/tl-speedup-16-cpu-gemm-driver-int8` | `f5ff9cce4a7a882f0f35f53b8ba04a3a99d21ae8` |
+| [#15274](https://github.com/ROCm/rocm-libraries/pull/15274) | `users/alvasile/tl-speedup-24-reference-fast-path-int8` | `203104dfb2f5bbf6693f93048463cfb1122cc4ea` |
+| New PR to create | `users/alvasile/tl-fix-float8-input-scaling` | `3534538e4c370dcba2be89a5a0dd10f585280632` |
+| [#15275](https://github.com/ROCm/rocm-libraries/pull/15275) | `users/alvasile/tl-speedup-25-reference-fast-path-float8-output` | `0c69cd859220ab316535b4c7651a176a0d744511` |
+| [#15276](https://github.com/ROCm/rocm-libraries/pull/15276) | `users/alvasile/tl-speedup-26-reference-fast-path-complex` | `386b9bb7f56d7ea682ac4389c76a1a1c6128966a` |
+| [#15277](https://github.com/ROCm/rocm-libraries/pull/15277) | `users/alvasile/tl-speedup-27-reference-fast-path-use-e-gradient` | `c87b8c01e1e52334442ad726d9b3460c24acc003` |
+| [#15278](https://github.com/ROCm/rocm-libraries/pull/15278) | `users/alvasile/tl-speedup-28-reference-fast-path-mx-k-tail` | `8eda434fc2a8e40743726e8abdecf365af961bca` |
+| New PR to create | `users/alvasile/tl-fix-reference-bias-gradient-cleanup` | `549fa73dd2dea12842739454119697b2d735c667` |
+| New PR to create | `users/alvasile/tl-speedup-reference-fast-path-amax-d` | `4135e6d96f2df606404ab51af3214a8b2f4a3427` |
 
-- [ ] Implement AMAX-D support in the CPU reference fast path as a new PR added to the top of this stack, after [#15278](https://github.com/ROCm/rocm-libraries/pull/15278) and the bias-gradient correctness follow-up below.
-- [ ] When fast AMAX-D becomes supported, replace `CPUGemm.fast_AmaxD_Rejected` with a positive fast-path D/AMAX-D regression; preserve rejection-diagnostic coverage with another unsupported case. The rejection check was added while addressing [Newling's eligibility-diagnostic suggestion](https://github.com/newling/rocm-libraries/commit/c7540acfc31bd3bfc502810669d0e598c14e3c57) in #15278.
+#15257 is the existing prerequisite. Preserve its remote stack ownership and the rest of its original stack during publication. Local `gh stack` metadata contains the chain above; GitHub stack membership and published bases have not been updated.
 
-**Resolution for #15259:** [newling’s request to add AMAX-D to the fast path](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5879565945) will be handled by this new PR in the same stack. Keep #15259 focused on the slow-path lock and per-thread maximum change. The fast-path feature is planned; it has not been implemented by this resolution.
+### Remaining execution checklist
 
-The new PR must extend fast-path eligibility and independently validate D and AMAX-D across batching, data types and epilogues. Compute the maximum at the same stage as the slow path: before D scaling, gate residual and the final D cast.
+1. File the Float8 input-scaling issue using the prepared draft, link discovery PR #15275 and the gfx942/gfx950 evidence, and place its number in the new correctness PR's closing reference.
+2. Create the three draft PRs and publish the required stack relationship changes: Float8 correctness between #15274/#15275; bias cleanup after #15278; AMAX-D last. Add #15765 to the GitHub stack between #15259/#15266. Preserve the #15257 prerequisite relationship.
+3. Complete final production gfx950 qualification. Repeat the Float8 matrix against the final runtime patch, with actual nongrouped and grouped execution. Retain dedicated gradient/non-HPA and MX-tail qualification against the final published stack. The user's earlier gfx950 result confirmed the proposal at the pinned remote head, not this final integrated implementation.
+4. Immediately before authorized code publication, fetch the newest develop head and run `gh stack rebase --remote origin` again if develop or the stack has changed. Record the fetched/used SHA and repeat checks affected by any further rebase. The requested initial fetch/rebase is complete above.
+5. Publish local code only when code publication is authorized. Verify every published head, base, stack membership and ancestry.
+6. Publish the prepared description/reply text after approval, add the actual issue/new PR links, and refresh validation results for the final published heads. Existing Tony/Newling replies on #16120 are already posted; do not duplicate them.
+7. Verify that required shared CI executes every new regression. Check affected-architecture results, then verify and resolve addressed review threads and obtain reviewer sign-off against the published code.
 
-### 2. Insert PR #15765 between #15259 and #15266
+The AMAX-D race-detector follow-up remains removed at the user's request. Earlier posted replies and ticket comments are historical records.
 
-- [ ] Add [#15765 — accumulate Int8 dot products before float epilogues](https://github.com/ROCm/rocm-libraries/pull/15765) to this stack immediately after #15259 and before the next PR, #15266.
-- [ ] **On #15266, after restacking onto #15765:** replace the float-per-K accumulation and `2^24` precision-limit explanation in `projects/hipblaslt/tensilelite/tests/CMakeLists.txt` with the corrected integer reduction followed by the float epilogue. Remove the precision-only K = 151 restriction and restore suitable large-K slow-path coverage while keeping the driver's Int32 oracle and output-range constraints explicit. Refresh the matching oracle-versus-slow-reference note in `client/cpu_gemm_driver.cpp` and the precision-limit wording in #15266's PR description. Retain #15765's large-K regressions. These edits belong on #15266. [Source feedback](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212035).
+### 1. AMAX-D fast path — implemented, new final PR to create
 
-- [ ] **On #15274, after restacking onto #15765:** extend `Int8FloatEpilogueStartsFromExactSum` to use `solveInt8FastAndSlow<int32_t>` and assert both `dFast[0]` and `dSlow[0]` equal the independent `exactSum` of 16,790,292. Keep the premise showing that the old per-K float summation loses precision. This test is introduced by #15274, so its extension belongs on #15274. [Source feedback](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4568212613).
+- [x] Implement locally on `users/alvasile/tl-speedup-reference-fast-path-amax-d`, after the bias-gradient correctness branch.
+- [x] Add ten independent D/AMAX-D gtests and positive fast-driver cases. Replace `CPUGemm.fast_AmaxD_Rejected` with an unsupported Scalar narrowing diagnostic case.
+- [ ] Create/publish the final PR and verify its shared CI.
 
-- [ ] **On #15274, after restacking onto #15765:** refresh the matching `solveCPUFast` and Int8 test comments to describe the corrected integer reduction followed by the selected epilogue on both paths. Preserve the explicit modulo `2^32` wrapping policy and signed Int32 interpretation. The PR description's final relationship wording, Related links and risk wording were published on November 16 at the user's request; verify that they remain accurate after integration. These source-comment edits belong on #15274. [Source review](https://github.com/ROCm/rocm-libraries/pull/15274#pullrequestreview-5897488728).
+**Resolution for #15259:** [Newling's AMAX-D request](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5879565945) is implemented in this separate final branch. #15259 retains its slow-path lock/per-thread-maximum scope.
 
-- [ ] **In #15765's description:** document the integration order and link the downstream #15266/#15274 follow-ups above, naming the branch that owns each edit. Describe #15765's own slow-reference fix and tests as its contents; label the later driver/fast-path documentation and test changes as downstream integration work. Its current exclusion of driver documentation does not imply skipping the separately owned #15266 follow-up. [Overflow feedback](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4568212559) and [wording feedback](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4568212578).
+Each tile computes a local absolute maximum, each worker accumulates its own maximum, and the main thread merges after the parallel loop. Sampling follows activation/gradient multiplication and precedes gate residual and the final output cast. Complex AMAX-D and ScaleCD combinations retain fallback. Coverage includes real, Int8 and both Float8 encodings; transposes, batching, activation, gradients, output narrowing, zero and NaN comparison behavior. All ten gtests pass at each OpenMP limit 1, 3 and 8. No performance result is claimed for the new feature.
 
-The intended branch order is `users/alvasile/tl-speedup-09-reference-slow-path-amax-d` → `users/alvasile/fix-int8-slow-reference-accumulation` (#15765) → `users/alvasile/tl-speedup-16-cpu-gemm-driver-int8` (#15266).
+### 2. PR #15765 insertion and owned downstream edits — implemented locally
 
-At the November 16 check, #15765 already targets the #15259 branch, but it is absent from the GitHub stack membership and #15266 still targets #15259 directly. Add #15765 to the stack, make #15266 target #15765’s branch, and restack the remaining descendants in their existing order.
+- [x] Place [#15765](https://github.com/ROCm/rocm-libraries/pull/15765) immediately after #15259 and before #15266 in the local stack.
+- [x] Commit the driver/oracle wording and large-K test edits on #15266, preserving the Int32 output-range constraints. [Source feedback](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212035).
+- [x] Commit the both-path exact-sum regression and integer-reduction comments on #15274. The shared helper is renamed by #15275, which carries the regression through that rename. [Source feedback](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4568212613).
+- [x] Draft #15765's refreshed description with its own fix/tests and the separate downstream #15266/#15274 responsibilities.
+- [ ] Publish GitHub stack membership/base changes and the description drafts.
 
-Planned order, bottom → top: **#15259 → #15765 → #15266 → #15274 → new Float8 scaling correctness PR → #15275 → #15276 → #15277 → #15278 → new bias-gradient correctness PR → new AMAX-D fast-path PR**.
+### 3. Develop fetch/rebase — completed, refresh before publication if needed
 
-### 3. Fetch newest develop and rebase before code publication
-
-- [ ] After the planned insertions and local integration, fetch the newest `develop` head and run `gh stack rebase` to rebase the entire stack onto it before publishing code.
+The first completed full rebase used `951ff1461d4ba7e425fe1f50de53c4e94b26e323`. Develop then advanced by the TensileLite C++20/helper-cache commit. A fresh fetch and second full rebase used `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`; the build, installed suite and numerical probes were repeated against that code.
 
 ```sh
 git fetch origin develop
-gh stack rebase
+gh stack rebase --remote origin
 ```
 
-Record the fetched trunk SHA and the trunk SHA actually used by the rebase. Preserve the planned PR order, resolve conflicts, verify ancestry and repeat validation affected by the new base. Code publication remains a later step in the checklist.
+`--remote origin` disambiguates this checkout's remotes. Because local develop is checked out in the main worktree, `gh stack` rebased onto `origin/develop` and preserved local develop. Fetch negotiation also used `fetch.hideRefs=worktrees/` and `fetch.hideRefs=refs/backup/`. Both full-rebase logs and the fetched/validated SHAs are retained in [the evidence directory](/tmp/tl-reference-implementation-20261117/).
 
-### 4. gfx950 GPU validation of Float8 scaling — #15275 — completed
+### 4. gfx950 Float8 proposal validation — completed; final patch qualification pending
 
-- [x] Run the 12 OCP Float8-output type IDs on gfx950 across scaling disabled, Scalar and Vector; both Half operand directions; NN/NT/TN/TT; alpha/beta epilogues; GSU 1/2/4; and `MultipleBuffer`/`MultipleBufferSingleKernel`. Confirm actual kernel execution and compare every output against the independent arithmetic model and both references. Verify the Scalar narrowing operation order and split-K conversion-call proposal with non-unit scales on both operands, retaining non-narrowing controls.
+- [x] User confirmed all three findings at remote head `b6828c46316720641f2e3f15a1320201d4f1c34b`: HIP device 0, MI350X (`gfx950:sramecc+:xnack-`), ROCm 7.2.1, OCP F8/B8.
+- [x] Baseline: 1,728 executed, 1,696 passed, 32 numerical failures, zero unexecuted. Conversion-call proposal: 1,728 executed/passed, zero failures or unexecuted cases; the user's other 1,696 output bytes were unchanged.
+- [ ] Repeat against the final production patch and grouped invocation path on gfx950.
 
-**Completed — user-provided results, November 16, 2026:** the user confirmed all three findings on pinned remote head `b6828c46316720641f2e3f15a1320201d4f1c34b`, using HIP device 0, AMD Instinct MI350X (`gfx950:sramecc+:xnack-`), ROCm 7.2.1 and OCP F8/B8 types. Baseline: 1,728 executed, 1,696 passed, 32 numerical failures, zero unexecuted. Conversion-call proposal: all 1,728 executed and passed, zero numerical failures or unexecuted cases. The other 1,696 cases retained identical output bytes. OCP CPU validation was already complete. Both architectures' results are recorded under [#15275](#pr-15275). The two pre-existing corrections are now implemented locally in the new correctness branch; the #15275 Scalar guard was implemented locally on November 17, preserving Vector eligibility.
+The user-provided result establishes the operation order and proposal on gfx950. It does not replace the final-runtime qualification listed above.
 
-### 5. Float8 input-scaling correctness — new PR between #15274 and #15275
+### 5. Float8 input-scaling correctness — implemented, issue/PR to create
 
-- [ ] File a GitHub bug issue for the two pre-existing defects discovered while reviewing [#15275](https://github.com/ROCm/rocm-libraries/pull/15275). Link the issue to #15275 and include the pinned remote head `b6828c46316720641f2e3f15a1320201d4f1c34b`, the independent numerical witnesses, the gfx942 results and the user-provided gfx950 confirmation.
-- [ ] Create a correctness PR from `users/alvasile/tl-fix-float8-input-scaling`, based on `users/alvasile/tl-speedup-24-reference-fast-path-int8` (#15274). Link it to the new bug issue with a closing reference and link back to #15275 as the discovery PR. Suggested title: `fix(tensilelite): correct scaling around Float8 input conversion`.
-- [ ] Add the new PR to the stack immediately after #15274 and before #15275. Restack #15275 and its descendants onto it, preserving their order. Publish code only when authorized.
-- [ ] Require the new regression tests to execute in shared CI on the affected architectures. Repeat the gfx950 numerical matrix against the production runtime fix; the returned gfx950 results validate the earlier conversion-call proposal.
+- [x] Implement the slow Vector correction and GPU MultipleBuffer conversion binding correction on `users/alvasile/tl-fix-float8-input-scaling`.
+- [x] Demonstrate the six regressions failing before their respective fixes and passing after; include grouped argument construction in the existing shared standard suite.
+- [x] Insert the branch locally between #15274 and #15275. Preserve Scalar-only fallback on #15275 and leave Vector eligible.
+- [x] Repeat final integrated gfx942 GPU execution: 1,728 nongrouped and 384 grouped cases pass, with no unexecuted or numerical failures. The 32 baseline failures are corrected and the other 1,696 numerical arrays match baseline.
+- [ ] File the bug issue and create the correctness PR with `Fixes #<FLOAT8_ISSUE_NUMBER>` and discovery link #15275.
+- [ ] Publish the stack relationship and verify shared CI/final-production gfx950 results.
 
-The new PR owns the slow-reference Vector correction and the GPU `MultipleBuffer` split-K conversion-argument correction. Both defects are present in #15274 and predate #15275. Its tests must run independently on that base. The Scalar-only fast-path fallback and its eligibility tests belong in #15275, which introduces Float8-output fast eligibility; resolve that item before treating #15275 as ready.
+Both defects predate [#15275](https://github.com/ROCm/rocm-libraries/pull/15275) and are present below it. The slow reference now applies both Vector scales after narrowing and reduction. The conversion invocation substitutes a unit scalar only for the already-consumed narrowed operand; the main kernel's binding and the other operand's scale stay intact. The original local red/green results are preserved in [the earlier evidence](/tmp/tl-float8-scaling-fix-20261116/README.md). Current integrated evidence is below.
 
-**Implemented and committed locally:** commit `6d06af3ff59c224c92a468920120797edd2212fa` on `users/alvasile/tl-fix-float8-input-scaling`. The new branch is based on local #15274 at `d6af002f7a656236440771e1dfbc1eb69080f5ac`. Both new regressions were observed failing before their respective fixes, then passing. The final run passed 61 reference/argument gtests, including six new tests, and all 468 CPU-driver CTests. All 2,304 independent CPU cases pass on this base, where Float8 output remains fast-ineligible. The patched production runtime passed all 1,728 gfx942 GPU cases without the prototype's invocation replacement; the prior 32 failures are fixed and the other 1,696 numerical output arrays match baseline. Grouped argument construction is tested; grouped GPU execution has not been run. Evidence: [local reproduction and results](/tmp/tl-float8-scaling-fix-20261116/README.md) and [summary](/tmp/tl-float8-scaling-fix-20261116/summary.json).
+### 6. Bias-gradient cleanup — implemented, correctness PR to create
 
-No issue or PR has been created, and the correctness branch has not been inserted into the stack. The Scalar guard on #15275 is implemented locally. The November 17 restack through #15276 preserves the deferred correctness branch at its original commit. Shared-CI/final-production gfx950 validation and actual stack insertion remain outstanding.
+- [x] File [#16120](https://github.com/ROCm/rocm-libraries/issues/16120), link discovery [#15277](https://github.com/ROCm/rocm-libraries/pull/15277), and assign `Alex-Vasile`; completed earlier and verified by read-back.
+- [x] Implement [Newling's suggestion](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d) on `users/alvasile/tl-fix-reference-bias-gradient-cleanup`, sharing reduction, giving workspace automatic ownership, throwing actual reduction errors and guarding complex reduction.
+- [x] Add `BatchedBiasGradientReportsUnsupportedShape` for A/B/D and both path preferences; check the dimension/batch diagnostic and unchanged bias. The original unpatched run failed at A because no exception was thrown; it did not separately reproduce the D double-free. All 55 focused tests passed after the fix, and the final standard suites pass.
+- [ ] Create the PR after #15278 with `Fixes #16120`; the AMAX-D branch follows it.
+- [ ] Verify shared-CI execution against the published code.
 
-### 6. Bias-gradient reduction cleanup — new correctness PR at the top of the stack
+The batching limitation is preserved. [Tony](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4602603298) and [Newling](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6954240221) already received replies linking the existing ticket and separate-PR plan. Their replies require no duplicate publication. The non-HPA accumulation guard remains owned by #15277 and survives this integration.
 
-- [x] Filed [#16120 — unsupported bias-gradient reduction errors](https://github.com/ROCm/rocm-libraries/issues/16120) for the pre-existing slow-reference double-free and discarded reduction errors discovered during [#15277's review](https://github.com/ROCm/rocm-libraries/pull/15277). Assigned to `Alex-Vasile`; verified the exact issue text and assignment by read-back.
-- [ ] Create a separate correctness PR using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d), sharing `reduceBiasGradient` between the reference paths, giving the workspace automatic ownership and propagating reduction errors for A, B and D bias sources.
-- [ ] Add that PR at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), after its existing final PR [#15278](https://github.com/ROCm/rocm-libraries/pull/15278). The planned AMAX-D fast-path PR remains a later final addition.
-- [ ] Include `Fixes #16120` in the new PR description and link #15277 as the discovery PR. Preserve the current single-batch reduction limitation; add no batched bias-gradient implementation.
-- [ ] Add `BatchedBiasGradientReportsUnsupportedShape` for A/B/D through both requested paths, verifying the diagnostic and unchanged bias. Demonstrate the regression failing before and passing after the fix, and require shared-CI execution.
+### Integrated validation evidence — November 17, 2026
 
-**Agreed resolution for #15277:** handle these inherited cleanup/error-reporting defects in the separate top-of-stack PR. [Tony's comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216) and [Newling's linked review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items) received verified replies linking [#16120](https://github.com/ROCm/rocm-libraries/issues/16120) and this plan: [reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4602603298) and [reply to Newling](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6954240221). The current source still contains the defect until the follow-up is integrated. The non-HPA accumulation finding is a separate feedback item.
+| Validation on code tip `4135e6d96f2df606404ab51af3214a8b2f4a3427` | Result |
+| --- | --- |
+| Release tests, driver and client build | Passed |
+| Standard build-tree CTest | 925/925 passed: 924 drivers and the standard gtest suite |
+| Standard installed CTest, `LD_LIBRARY_PATH` unset | 925/925 passed, with local ROCm runtime dependencies |
+| Independent AMAX-D gtests, limits 1/3/8 | 10/10 passed at each limit |
+| Independent CPU Float8 matrix, both scale profiles | 2,304 passed; zero slow or fast/fallback mismatches |
+| gfx942 nongrouped Float8 matrix | 1,728 executed/passed; no failures, unexecuted or nonfinite outputs |
+| gfx942 grouped Float8 matrix | 384 executed/passed; no failures, unexecuted or nonfinite outputs |
+| Previously passing nongrouped control arrays | All 1,696 numerically equal to baseline; all 32 baseline failures fixed |
+| Scoped root/component hooks and whitespace | Passed; root C++/CMake hooks exclude these paths |
+| Manual formatting of this turn's new C++ ranges | Passed with clang-format 18.1.4 after branch-owned corrections |
+
+The gtest suite's internal exclusions retain their existing behavior; the 925 totals count CTest registrations. The tests include the non-HPA/HPA guard, complex aliasing and finite-data comparisons, exact MX tails with nonzero padding/NaN rejection, negative-test diagnostics, Float8 scaling/casts and Int8 exact sums/wrapping. Shared CI has not executed any unpublished head.
+
+The saved nongrouped kernel libraries used the previous `FusedGemmA2A` serialization. An artifact-only migration verified every legacy fusion value was false and translated both the problem field and predicate to current `FusedA2A: Disabled`, retaining the disabled-fusion constraint and the original kernel objects. No production serializer or kernel was changed for this migration. The final production probe was invoked without its optional prototype replacement argument.
+
+Grouped execution uses newly generated libraries. The harness follows client setup by reserving required host workspace and giving each problem its own GSU synchronizer slot. Coverage includes both Half directions, Scalar/Vector, four layouts, GSU 1/2/4, MB/MBSK, two epilogues and two distinct grouped problems.
+
+Raw logs, XML, probe/build recipes, manifests, JSONL output and [machine-readable final results](/tmp/tl-reference-implementation-20261117/latest-validation-summary.json) are in `/tmp/tl-reference-implementation-20261117/`. The `latest-*` files record the final develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599` run; earlier files preserve the red/green and first integrated runs. Final gfx950 and shared-CI checks remain explicitly open above. No current performance or race-detector result is claimed.
+
+The per-PR walkthroughs below retain their dated review/discussion history. The completed local implementation and remaining publication state above supersede older statements that integration or these source edits were pending.
 
 <a id="pr-15259"></a>
 
