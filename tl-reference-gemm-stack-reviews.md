@@ -24,7 +24,26 @@ Newling’s two posts on #15259 contain reviews of all seven PRs: [initial round
 
 ## Future work
 
-Future work includes planned additions to [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515) and the sanitizer validation tracked in AIHPBLAS-5035.
+Future work includes planned additions to [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), integration, validation and publication.
+
+### Remaining execution checklist — updated November 17, 2026
+
+1. Insert #15765 between #15259 and #15266 and update its description with the downstream integration responsibilities.
+2. Apply #15266's documentation and large-K coverage follow-ups after it inherits #15765.
+3. Apply #15274's fast/slow exact-sum regression and integer-reduction comment updates after it inherits #15765.
+4. File the Float8 input-scaling bug issue, linking #15275 and the gfx942/gfx950 numerical evidence.
+5. Create the already implemented Float8 correctness PR and insert it between #15274 and #15275.
+6. Implement the bias-gradient cleanup correctness PR above #15278, with regressions and `Fixes #16120`.
+7. Implement the AMAX-D fast-path PR at the end of the stack and replace the AMAX-D rejection test with positive coverage.
+8. Complete the OpenMP setter-cleanup integration through #15257, preserving #15259's synchronized AMAX-D merge.
+9. Restack the inserted PRs and descendants, preserving ordering, ownership and inherited review fixes.
+10. Run the integrated build-tree/installed CPU suites and remaining GPU validation, including the production Float8 fix on gfx950, grouped GPU execution, the non-HPA gradient guard and final MX-tail coverage. Verify required shared-CI execution when the code is published.
+11. Before code publication, fetch the newest head of `develop` and run `gh stack rebase` onto it. Record the fetched and rebased trunk SHAs, resolve any conflicts and repeat checks affected by the rebase. This step includes trunk rebasing.
+12. Publish the local review fixes and new PR branches when code publication is authorized.
+13. Publish the remaining description drafts and replies, then refresh results against the final published heads.
+14. Verify and resolve addressed review threads and obtain final reviewer sign-off, retaining issue/PR links for deferred work.
+
+The AMAX-D race-detector follow-up was removed from this remaining-work plan at the user's request on November 17. Earlier posted review replies and ticket comments remain historical records.
 
 ### 1. AMAX-D fast path — new PR at the end of the stack
 
@@ -52,15 +71,16 @@ At the November 16 check, #15765 already targets the #15259 branch, but it is ab
 
 Planned order, bottom → top: **#15259 → #15765 → #15266 → #15274 → new Float8 scaling correctness PR → #15275 → #15276 → #15277 → #15278 → new bias-gradient correctness PR → new AMAX-D fast-path PR**.
 
-### 3. OpenMP-aware race detection for the AMAX-D merge — AIHPBLAS-5035
+### 3. Fetch newest develop and rebase before code publication
 
-- [ ] Run the 14 `CPUGemm.slow_*AmaxD*` cases with an instrumented CPU reference under ThreadSanitizer and an OpenMP-aware detector such as Archer. Track the work in [AIHPBLAS-5035](https://amd-hub.atlassian.net/browse/AIHPBLAS-5035).
+- [ ] After the planned insertions and local integration, fetch the newest `develop` head and run `gh stack rebase` to rebase the entire stack onto it before publishing code.
 
-**Agreed resolution for #15259:** retain the critical merge and treat [Tony’s race-detection feedback](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4568211288) as a non-blocking validation follow-up. Numerical tests cannot reliably detect every lost update after synchronization is removed; no ThreadSanitizer/Archer result is claimed for this PR.
+```sh
+git fetch origin develop
+gh stack rebase
+```
 
-Include the build-tree CPU driver cases explicitly in the sanitizer run; the installed quick tier does not select them. Use thread limits of 1, 3 and 8 and record observed team sizes. Check the detector by temporarily removing the merge synchronization and confirming a multi-thread race report, then restore it and require a clean run. Record the tested commit, commands and logs on the ticket.
-
-The follow-up was published in [AIHPBLAS-5035 comment 706371](https://amd-hub.atlassian.net/browse/AIHPBLAS-5035?focusedCommentId=706371) on November 16, 2026, and verified by reading it back. [The reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4588246818) is also posted and verified. The sanitizer run remains pending.
+Record the fetched trunk SHA and the trunk SHA actually used by the rebase. Preserve the planned PR order, resolve conflicts, verify ancestry and repeat validation affected by the new base. Code publication remains a later step in the checklist.
 
 ### 4. gfx950 GPU validation of Float8 scaling — #15275 — completed
 
@@ -112,7 +132,7 @@ Assessed current PR **#15259** at `571ecae3fc4814ff951461d1d14e48f780975511`. It
 | Stale “checks pending” sentence and unclear 942-test run | Completed: PR description updated November 16 | Replaced with linked current-head results and removed the unlinked 942-test claim. [Reply to Tony](#pr-15259-draft-reply-tony-description) is posted and verified. |
 | Per-element OpenMP setter | Agreed: addressed by #15257, pending integration | Keep the cleanup on #15257 and verify the combined code preserves its deletion and #15259’s critical merge. [Reply to Tony](#pr-15259-draft-reply-tony-openmp) is posted and verified. |
 | OMP_NUM_THREADS used as proof of team size | Completed: PR description updated November 16 | Test Plan now uses OMP_THREAD_LIMIT=1/3/8; the historical OMP_NUM_THREADS=25 setting is qualified because the actual team size is unverified. Broader policy remains on #15257. [Reply to newling](#pr-15259-draft-reply-newling-thread-counts) is posted and verified. |
-| No reliable race test for the critical merge | Agreed: non-blocking validation follow-up | Critical retained; [reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4588246818) and [AIHPBLAS-5035 comment](https://amd-hub.atlassian.net/browse/AIHPBLAS-5035?focusedCommentId=706371) are posted and verified. The sanitizer run is pending; see [Future work](#future-work). |
+| No reliable race test for the critical merge | Removed from remaining work at user request, November 17 | Critical retained. The earlier [reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15259#discussion_r4588246818) and [AIHPBLAS-5035 comment](https://amd-hub.atlassian.net/browse/AIHPBLAS-5035?focusedCommentId=706371) remain historical records; this stack no longer schedules a race-detector follow-up. |
 | Add AMAX-D to the fast path | Resolution recorded: new PR in this stack | Implement and test the feature in a new PR added to the end of the stack; see [Future work](#future-work). Keep #15259 focused on the slow-path optimization. |
 | Policy-bot test filename warning | Ignored per user instruction | No follow-up action. |
 | Failed project coverage targets | Ignored per user instruction | No follow-up action for #15259. |
@@ -181,7 +201,7 @@ At the pinned TheRock version, ordinary component PRs select `standard`; the cur
 
 Evidence is preserved locally in `/tmp/tl-amaxd-installed-ci-20261116/`: the build log, discovery JSON, relocated dependency output, three numerical logs/JUnit reports, and injected/restored validation logs. These host checks validate packaging and numerical failure handling; they do not establish GPU performance or race-detector coverage.
 
-**Shared CI status:** the implementation is local and has not been pushed. The old-head PR checks do not validate it. Publish this commit, then require the #15259 standard TensileLite job to report the installed driver cases and a passing `Multi-Arch CI Summary` before merging. Math CI's coverage run remains enabled. Race detection remains the agreed AIHPBLAS-5035 follow-up.
+**Shared CI status:** the implementation is local and has not been pushed. The old-head PR checks do not validate it. Publish this commit, then require the #15259 standard TensileLite job to report the installed driver cases and a passing `Multi-Arch CI Summary` before merging. Math CI's coverage run remains enabled. The race-detector follow-up was subsequently removed from this remaining-work plan at the user's request on November 17.
 
 <a id="pr-15259-reply-newling-installed-ci"></a>
 
