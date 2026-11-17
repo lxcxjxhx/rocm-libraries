@@ -2252,13 +2252,37 @@ Related feedback: [Tony’s inline comment](https://github.com/ROCm/rocm-librari
 
 Publication records are saved under `/tmp/tl-pr15277-bias-gradient-followup-20261117/`. The issue and replies are published; the correctness PR has not been created. No production code was changed or pushed, and #15277's code head and base remain unchanged.
 
-#### Non-HPA bias-gradient accumulation — next item for discussion
+#### Non-HPA bias-gradient accumulation — agreed and implemented locally
 
 [Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214232) offers either keeping non-HPA gradient+bias problems on the slow path or explicitly choosing the wider float sum. [Newling's linked correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items) demonstrates that this difference exceeds last-bit variation and proposes the conservative eligibility guard in [de7815c2e50](https://github.com/newling/rocm-libraries/commit/de7815c2e5066f6b2ff76e589732a3b8a671e402).
 
-**Source assessment:** non-HPA means higher-precision accumulation is disabled. The slow dispatch uses Half accumulation for `H_H_H` and BFloat16 accumulation for `B_B_S`; the default `ReferenceSolution` accumulator is the D type. The fast reduction uses float. With all-one Half inputs and M=K=1, N=4097, Newling reports identical D values of 1 but bias gradients of 2048 on slow and 4096 on fast. Repeated narrow additions and a float sum followed by one narrow conversion have different rounding. The existing driver and gradient tests use wider accumulation and do not cover this boundary. No new numerical or GPU validation is claimed in this assessment.
+**Source assessment and reproduced failure:** non-HPA means higher-precision accumulation is disabled. The slow dispatch uses Half accumulation for `H_H_H` and BFloat16 accumulation for `B_B_S`; the default `ReferenceSolution` accumulator is the D type. The fast reduction uses float. A new regression at local pre-fix head `4430f441cf54dfd80da9a29e0edaafa213a96cc8` reproduced both differences with all-one inputs and M=K=1: Half at N=4097 returned bias 4096 when fast execution was requested, versus the expected narrow sum 2048; BFloat16 at N=513 returned 512 versus 256. Explicit slow execution passed both cases, and every D element was 1. The test checks eligibility after the numerical assertions so it exposes the wrong values before the fix.
 
-**Recommendation, pending discussion:** take Newling's guard in #15277, which introduces gradient fast-path eligibility. Retain the slow path when gradient+bias is enabled, higher-precision accumulation is disabled and the type ID is `H_H_H` or `B_B_S`. Add the Half and BFloat16 rounding-boundary regression, comparing both requested paths against the explicit narrow results, and preserve fast eligibility for the HPA configurations. Update the description's numerical caveat to match this policy. This item is separate from the cleanup follow-up tracked in #16120, and no guard or reply has been applied yet.
+**Agreed resolution:** implemented Newling's type-specific guard in #15277. Gradient+bias problems with higher-precision accumulation disabled and type ID `H_H_H` or `B_B_S` stay on the slow path (`non_hpa_bias_reduction`). Both execution preferences now preserve bias 2048 for Half and 256 for BFloat16. HPA configurations remain fast-eligible and return the independently expected float sums narrowed once, 4096 and 512. Additional eligibility controls cover A/B/D bias sources and confirm that disabling either gradient or bias preserves fast eligibility. This item is separate from the cleanup follow-up tracked in #16120; that production fix remains deferred.
+
+**Restack:** used `gh stack rebase --no-trunk --downstack` and continued the two conflicts through supported `gh stack` commands. #15277 now inherits #15276 at `429dbfe15dbf14d9ea3be8dd50a4d8277dda1bcc`, including its earlier stack fixes. Preserved the negative-test helper and all six E/gradient diagnostic checks. The review archive was byte-identical to its pre-restack copy before this entry changed. #15278, all lower branches and the deferred Float8 correctness branch retained their original heads; backup refs and records are in `/tmp/tl-pr15277-non-hpa-20261117/`.
+
+**Validation:** rebuilt `tensilelite-tests`, `cpu-gemm-driver` and `tensilelite-client` in the reusable Release ROCm build. All 48 focused reference gtests passed, including the three new non-HPA/HPA/eligibility tests. All 795 standard-tier `CPUGemm.*` CTests passed with four CTest workers (29.06 s). Runs used `OMP_THREAD_LIMIT=8`, `OMP_NUM_THREADS=4` and `KMP_BLOCKTIME=0`. The new gtests are included in the existing standard-tier CTest suite's `--gtest_filter=*`; no extra registration is needed. Root and component pre-commit hooks passed; the component hook selected no Python unit/characterization tests for these changes. Formatted the changed C++ ranges with clang-format 18.1.4 and checked the diff for whitespace errors. These are local CPU tests. Shared CI has not run the unpushed guard, and no new GPU or sanitizer run is claimed. Build, red/green and hook logs are saved in `/tmp/tl-pr15277-non-hpa-20261117/`.
+
+##### Draft reply to Tony — not posted
+
+Reply to [Tony's non-HPA inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214232):
+
+> Agreed. I've implemented the guard locally for non-HPA gradient+bias problems with `H_H_H` or `B_B_S`, preserving the slow path's Half/BFloat16 accumulation. The regression reproduced bias 4096 versus 2048 for Half and 512 versus 256 for BFloat16. With the guard, both requested paths return 2048 and 256. HPA configurations remain fast-eligible and retain float accumulation. All 48 focused reference tests and 795 CPU-driver CTests passed. The code is committed locally and has not been pushed.
+
+##### Draft reply to Newling — not posted
+
+Post on #15277, referring to [Newling's non-HPA finding](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items):
+
+> @newling, I've taken the non-HPA eligibility guard from [de7815c2e50](https://github.com/newling/rocm-libraries/commit/de7815c2e5066f6b2ff76e589732a3b8a671e402) in #15277. The new regression reproduced the Half and BFloat16 bias-sum differences before the fix; afterward, both requested paths preserve the narrow sums. HPA controls retain fast eligibility and float accumulation, and the eligibility checks cover all three bias sources. All 48 focused reference tests and 795 CPU-driver CTests passed locally. The code is committed locally and has not been pushed. The separate cleanup/error-reporting fix remains tracked in #16120.
+
+##### Numerical-policy wording for the PR description — draft, not published
+
+Replace the paragraph beginning “Both are in one PR” with:
+
+> Both are in one PR because they share the test driver's output comparison code. Eligible `useE` and gradient problems are now validated by the fast path. Floating-point epilogue values can differ in their last bits when evaluation order differs. Non-HPA `H_H_H` and `B_B_S` gradient problems with a bias output remain on the slow path, preserving Half/BFloat16 accumulation. HPA means higher-precision accumulation; those configurations remain fast-eligible and reduce in float.
+
+**Next feedback item:** Tony asks to refresh the stale Test Result and report whether the planned gfx950 gradient run happened. The live description still says this split branch has not been built or tested. Recommend reporting verified CI evidence at the published head separately from the local results above, and correcting the Test Plan so the category-based build actually selects the reference gtests. This description update is not applied yet.
 
 ### Reviews (1)
 
