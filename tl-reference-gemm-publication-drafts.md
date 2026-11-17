@@ -1,13 +1,14 @@
-# Reference-GEMM stack publication drafts
+# Reference-GEMM stack publication record
 
-Prepared November 17, 2026 from live PR bodies and validated local stack tip `4135e6d96f2df606404ab51af3214a8b2f4a3427` on develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`.
+Published and verified November 17, 2026, using validated code tip `4135e6d96f2df606404ab51af3214a8b2f4a3427` on develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`.
 
-No text in this file has been published during this implementation. Code pushes remain pending authorization. Resolve `<FLOAT8_ISSUE_NUMBER>` after filing the issue, then add the resulting PR links and published-head CI results. The descriptions distinguish integrated local validation from earlier published-head evidence.
+The Float8 issue, three new draft PRs, eleven descriptions and fourteen approved replies below are published. All twelve branches are pushed and linked in [stack #16153](https://github.com/ROCm/rocm-libraries/stack/16153). These are the exact verified published bodies, including the appended Jira references on #16149 and #16151; earlier drafts remain in Git history. Final production gfx950 qualification, passing shared CI and reviewer follow-up remain pending. The descriptions distinguish integrated local validation from earlier published-head evidence.
 
-## Float8 bug issue
+## Float8 bug issue #16148 — published
 
-TensileLite Float8 narrowing applies input scales incorrectly in slow Vector and MultipleBuffer conversion paths
+[TensileLite Float8 narrowing applies input scales incorrectly in slow Vector and MultipleBuffer conversion paths](https://github.com/ROCm/rocm-libraries/issues/16148)
 
+````markdown
 Discovered while reviewing [PR #15275](https://github.com/ROCm/rocm-libraries/pull/15275), at published head `b6828c46316720641f2e3f15a1320201d4f1c34b`. Both defects also exist below that PR.
 
 1. With Half storage narrowed to Float8 compute inputs and Vector ScaleAB, the GPU narrows first and applies both vectors after reduction. The slow CPU reference omits the vector belonging to the narrowed Half operand.
@@ -24,9 +25,12 @@ Numerical evidence: 1,728 gfx942 cases executed; baseline 1,696 passed and 32 fa
 
 Regression coverage calls production SolveGemmCPU and inspects production conversion arguments, including grouped argument construction. Final integrated gfx942 execution passed all 1,728 nongrouped and 384 grouped cases at stack tip `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Final production gfx950 execution remains a qualification task.
 
-The dedicated fix branch is `users/alvasile/tl-fix-float8-input-scaling`, to be inserted between #15274 and #15275. Its new PR must close this issue and link #15275 as the discovery PR.
+Correctness PR: [#16149](https://github.com/ROCm/rocm-libraries/pull/16149), from `users/alvasile/tl-fix-float8-input-scaling`, between #15274 and #15275. It closes this issue and links #15275 as the discovery PR.
+````
 
-## PR #15765
+## PR #15765 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15765)
 
 Title: `fix(tensilelite): accumulate Int8 dot products before float epilogues`
 
@@ -84,51 +88,7 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
-
-Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606404ab51af3214a8b2f4a3427`, rebased onto develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`:
-
-- Release builds of `tensilelite-tests`, `cpu-gemm-driver` and `tensilelite-client` passed.
-- Standard build-tree and installed CTest each passed **925/925 registrations**, comprising 924 driver cases and the standard gtest suite. Installed execution used `LD_LIBRARY_PATH` unset and local ROCm runtime dependencies.
-- All ten independent AMAX-D gtests passed at each OpenMP thread limit of 1, 3 and 8.
-- The independent CPU Float8 matrix passed all 2,304 cases across both scale profiles, with zero slow or fast/fallback mismatches.
-- gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
-- Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
-
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
-
-Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606404ab51af3214a8b2f4a3427`, rebased onto develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`:
-
-- Release builds of `tensilelite-tests`, `cpu-gemm-driver` and `tensilelite-client` passed.
-- Standard build-tree and installed CTest each passed **925/925 registrations**, comprising 924 driver cases and the standard gtest suite. Installed execution used `LD_LIBRARY_PATH` unset and local ROCm runtime dependencies.
-- All ten independent AMAX-D gtests passed at each OpenMP thread limit of 1, 3 and 8.
-- The independent CPU Float8 matrix passed all 2,304 cases across both scale profiles, with zero slow or fast/fallback mismatches.
-- gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
-- Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
-
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
-
-Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606404ab51af3214a8b2f4a3427`, rebased onto develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`:
-
-- Release builds of `tensilelite-tests`, `cpu-gemm-driver` and `tensilelite-client` passed.
-- Standard build-tree and installed CTest each passed **925/925 registrations**, comprising 924 driver cases and the standard gtest suite. Installed execution used `LD_LIBRARY_PATH` unset and local ROCm runtime dependencies.
-- All ten independent AMAX-D gtests passed at each OpenMP thread limit of 1, 3 and 8.
-- The independent CPU Float8 matrix passed all 2,304 cases across both scale profiles, with zero slow or fast/fallback mismatches.
-- gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
-- Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
-
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
-
-Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606404ab51af3214a8b2f4a3427`, rebased onto develop `bc60c82f1d732aa8bb50c869ac3ad2e1a586e599`:
-
-- Release builds of `tensilelite-tests`, `cpu-gemm-driver` and `tensilelite-client` passed.
-- Standard build-tree and installed CTest each passed **925/925 registrations**, comprising 924 driver cases and the standard gtest suite. Installed execution used `LD_LIBRARY_PATH` unset and local ROCm runtime dependencies.
-- All ten independent AMAX-D gtests passed at each OpenMP thread limit of 1, 3 and 8.
-- The independent CPU Float8 matrix passed all 2,304 cases across both scale profiles, with zero slow or fast/fallback mismatches.
-- gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
-- Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
-
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Submission Checklist
 
@@ -139,7 +99,9 @@ These are integrated local results, including the later correctness and AMAX-D P
 Low (2/5): narrowly changes float-alpha Int8 CPU-reference results, including AMAX-D. Other data types and integer-alpha modes retain their existing arithmetic. Shared automated checks remain pending; no architecture-specific kernel changes require a GPU sweep.
 ````
 
-## PR #15259
+## PR #15259 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15259)
 
 Title: `perf(tensilelite): take the slow-path reference lock only for AMAX-D`
 
@@ -156,7 +118,7 @@ Production code (`client/src/Reference.cpp`): in `SolveCPU`'s slow path, each th
 
 Test driver (`client/cpu_gemm_driver.cpp`): cpu-gemm-driver, the standalone CPU-reference test program, gains `--outputAmaxD`. The problem then gets an AMAX-D output, and `--validate` compares it with max |D| of the driver's own scalar GEMM, which it computes independently of the client code. The value starts at -1, so a reference that never writes it fails.
 
-Tests (`tests/CMakeLists.txt`): 14 `CPUGemm.slow_*AmaxD*` CTest cases. They cover f32, f16 and bf16 (plain, and with transA, beta, bias, ReLU, alpha vector and vector scale A/B), plus f64, tf32, f8, bf8, f4 MX32, batched, alpha 0 and a 1x1 problem with a negative element. Each numerical case runs with OpenMP limits of 1, 3 and 8. They run on the slow path; the separate final stack PR adds fast AMAX-D support.
+Tests (`tests/CMakeLists.txt`): 14 `CPUGemm.slow_*AmaxD*` CTest cases. They cover f32, f16 and bf16 (plain, and with transA, beta, bias, ReLU, alpha vector and vector scale A/B), plus f64, tf32, f8, bf8, f4 MX32, batched, alpha 0 and a 1x1 problem with a negative element. Each numerical case runs with OpenMP limits of 1, 3 and 8. They run on the slow path; the separate final stack PR [#16151](https://github.com/ROCm/rocm-libraries/pull/16151) adds fast AMAX-D support.
 
 No GPU code changes.
 
@@ -202,7 +164,7 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
@@ -222,7 +184,9 @@ Client host code (CPU reference) and its test driver; no kernel or GPU behavior 
 Low (2/5): the slow-path reference keeps the same D and AMAX-D values and takes the lock once per thread instead of once per element. The 14 new cases check AMAX-D against an independent GEMM.
 ````
 
-## PR #15266
+## PR #15266 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15266)
 
 Title: `test(tensilelite): cpu-gemm-driver Int8 inputs with separate C/D and alpha types`
 
@@ -273,7 +237,7 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
@@ -294,7 +258,9 @@ Host-only test code: a CPU test driver and its CTest registrations. No kernel, c
 Low (1/5): test-only change to the CPU-reference test driver; the client, the CPU reference and device behavior are unchanged.
 ````
 
-## PR #15274
+## PR #15274 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15274)
 
 Title: `perf(tensilelite): run Int8-input GEMMs on the CPU reference fast path`
 
@@ -353,7 +319,7 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
@@ -375,7 +341,9 @@ Client host code: the CPU reference that validates GPU results. It is arch-indep
 Moderate (3/5): the CPU reference determines pass/fail for validated Int8 problems. Tests cover the six eligible type IDs and the integer-reduction and epilogue behavior.
 ````
 
-## PR #15275
+## PR #15275 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15275)
 
 Title: `perf(tensilelite): run Float8-output GEMMs on the CPU reference fast path`
 
@@ -389,7 +357,7 @@ JIRA ID : AIHPBLAS-5257
 ## Technical Details
 
 - Fast eligibility covers the slow reference's 24 Float8-output type IDs: Float8/BFloat8 inputs and hybrids within one encoding family, plus mixed Half/Float8 inputs. OCP is the Open Compute Project encoding; fnuz is the variant without negative zero. These combinations use float alpha, beta and accumulation.
-- Scalar scaling falls back when Half storage is narrowed to Float8 for multiplication. Vector narrowing remains eligible and relies on the preceding Float8 input-scaling correctness PR, which applies both vectors after the dot product.
+- Scalar scaling falls back when Half storage is narrowed to Float8 for multiplication. Vector narrowing remains eligible and relies on the preceding Float8 input-scaling correctness PR [#16149](https://github.com/ROCm/rocm-libraries/pull/16149), which applies both vectors after the dot product.
 - Both paths use `SaturateCast` for output conversion. Finite values round to nearest even and saturate at the largest finite value. OCP E4M3 and both fnuz formats turn either infinity into NaN; OCP E5M2 preserves signed infinity. All four preserve NaN.
 
 Blocked summation and the folded scale calculation can move a result by one Float8 step. The client's relative tolerances, 0.125 for Float8 and 0.25 for BFloat8, cover that difference.
@@ -426,16 +394,16 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
 - Work tracking: AIHPBLAS-5257
-- Depends on [#15274](https://github.com/ROCm/rocm-libraries/pull/15274) through the preceding Float8 input-scaling correctness PR. That PR owns the slow Vector scaling and split-K conversion fixes.
+- Depends on [#15274](https://github.com/ROCm/rocm-libraries/pull/15274) through the preceding Float8 input-scaling correctness PR [#16149](https://github.com/ROCm/rocm-libraries/pull/16149). That PR owns the slow Vector scaling and split-K conversion fixes.
 
 ## Device / Architecture Coverage
 
-This PR changes the CPU reference and test driver; it contains no GPU-kernel changes. Host numerical tests cover both OCP and fnuz encodings. Final-production gfx950 validation of the preceding Float8 input-scaling correctness PR remains outstanding.
+This PR changes the CPU reference and test driver; it contains no GPU-kernel changes. Host numerical tests cover both OCP and fnuz encodings. Final-production gfx950 validation of the preceding Float8 input-scaling correctness PR [#16149](https://github.com/ROCm/rocm-libraries/pull/16149) remains outstanding.
 
 ## Submission Checklist
 
@@ -446,7 +414,9 @@ This PR changes the CPU reference and test driver; it contains no GPU-kernel cha
 Moderate (3/5): the CPU reference decides pass/fail for 24 Float8-output type ids. Blocked summation can move a result by one Float8 step within the client's tolerances. Scalar Half-to-Float8 narrowing falls back; Vector narrowing relies on the preceding correctness PR.
 ````
 
-## PR #15276
+## PR #15276 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15276)
 
 Title: `perf(tensilelite): run complex GEMMs on the CPU reference fast path`
 
@@ -503,7 +473,7 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
@@ -523,7 +493,9 @@ Client host code: the CPU reference that validates GPU results. It is arch-indep
 Low (2/5): the CPU reference for complex problems moves to the fast path, with bitwise-identical results in the tested finite-result cases. Overflow and other non-finite behavior can differ between the paths.
 ````
 
-## PR #15277
+## PR #15277 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15277)
 
 Title: `perf(tensilelite): write E and run gradient GEMMs on the CPU reference fast path`
 
@@ -588,9 +560,11 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
+
+- Separate bias-gradient cleanup: [#16150](https://github.com/ROCm/rocm-libraries/pull/16150), which fixes [#16120](https://github.com/ROCm/rocm-libraries/issues/16120).
 
 - Work tracking: AIHPBLAS-5257
 - Depends on #15276: [complex CPU-reference fast path](https://github.com/ROCm/rocm-libraries/pull/15276).
@@ -608,7 +582,9 @@ Client host code: the CPU reference that validates GPU results. It is arch-indep
 Moderate (3/5): the CPU reference decides pass/fail for `useE` and gradient problems, including a new bias-gradient path. Values can differ from the slow path in the last bits. This is the largest of the fast-path changes.
 ````
 
-## PR #15278
+## PR #15278 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15278)
 
 Title: `perf(tensilelite): run MX GEMMs with a partial last MX block on the CPU reference fast path`
 
@@ -653,7 +629,7 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
@@ -672,15 +648,20 @@ CPU reference and driver changes; no GPU kernel code changes. The published-head
 ## Risk level
 
 Moderate (3/5): more MX problems use the blocked CPU reference. Changing accumulation order can change reference values and affect GPU validation tolerances. Equal-block slow execution remains available and clamps the final segment at K; asymmetric slow blocks remain rejected.
+
+
+[AIHPBLAS-5257]: https://amd-hub.atlassian.net/browse/AIHPBLAS-5257?atlOrigin=eyJpIjoiNWRkNTljNzYxNjVmNDY3MDlhMDU5Y2ZhYzA5YTRkZjUiLCJwIjoiZ2l0aHViLWNvbS1KU1cifQ
 ````
 
-## New float8 PR
+## PR #16149 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/16149)
 
 Title: `fix(tensilelite): correct scaling around Float8 input conversion`
 
 ````markdown
 JIRA ID : AIHPBLAS-5257
-Fixes #<FLOAT8_ISSUE_NUMBER>
+Fixes #16148
 
 ## Motivation
 
@@ -718,9 +699,11 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
+
+- Bug: [#16148](https://github.com/ROCm/rocm-libraries/issues/16148).
 
 - Discovery PR: [#15275](https://github.com/ROCm/rocm-libraries/pull/15275).
 - Stack base: [#15274](https://github.com/ROCm/rocm-libraries/pull/15274); next PR: #15275.
@@ -737,9 +720,14 @@ Host tests exercise both OCP and fnuz Float8 encodings where applicable. Numeric
 ## Risk level
 
 Moderate (3/5): changes CPU expected results and GPU conversion argument binding for scaled narrowing. Controls retain identical numerical arrays on gfx942. Shared CI and final production gfx950 results remain required.
+
+
+[AIHPBLAS-5257]: https://amd-hub.atlassian.net/browse/AIHPBLAS-5257?atlOrigin=eyJpIjoiNWRkNTljNzYxNjVmNDY3MDlhMDU5Y2ZhYzA5YTRkZjUiLCJwIjoiZ2l0aHViLWNvbS1KU1cifQ
 ````
 
-## New bias PR
+## PR #16150 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/16150)
 
 Title: `fix(tensilelite): share bias reduction and report unsupported shapes`
 
@@ -783,13 +771,13 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
 - Bug: [#16120](https://github.com/ROCm/rocm-libraries/issues/16120), assigned to Alex-Vasile.
 - Discovery PR: [#15277](https://github.com/ROCm/rocm-libraries/pull/15277).
-- Stack base: [#15278](https://github.com/ROCm/rocm-libraries/pull/15278); AMAX-D follows this PR.
+- Stack base: [#15278](https://github.com/ROCm/rocm-libraries/pull/15278); AMAX-D [#16151](https://github.com/ROCm/rocm-libraries/pull/16151) follows this PR.
 
 ## Device / Architecture Coverage
 
@@ -804,7 +792,9 @@ Host tests exercise both OCP and fnuz Float8 encodings where applicable. Numeric
 Moderate (3/5): shared reference cleanup and error paths change. Supported reductions retain their numerical behavior; unsupported shapes now report failure. This PR adds no batched bias-gradient support.
 ````
 
-## New amax PR
+## PR #16151 — description published
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/16151)
 
 Title: `feat(tensilelite): support AMAX-D in the CPU reference fast path`
 
@@ -848,12 +838,12 @@ Integrated local validation on November 17, 2026, at stack tip `4135e6d96f2df606
 - gfx942 executed all 1,728 nongrouped and 384 grouped Float8 GPU cases with zero numerical failures, unexecuted cases or nonfinite outputs. The 32 baseline failures are corrected; the other 1,696 nongrouped numerical output arrays equal baseline.
 - Scoped root and hipBLASLt hooks passed. The root C++/CMake hooks exclude these paths; formatting was checked separately for the new C++ edits.
 
-These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. No code has been pushed or run through shared CI at these local heads. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
+These are integrated local results, including the later correctness and AMAX-D PRs. They do not establish separate CI results for each intermediate branch. The code is published for review. Passing shared CI for these published heads has not yet been verified. Final production gfx950 validation, including the Float8 correction and dedicated gradient/MX-tail qualification, remains pending. No new performance measurement is claimed.
 
 ## Related
 
 - Feature request: [Newling’s AMAX-D review on #15259](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5879565945).
-- Final stack PR, after `users/alvasile/tl-fix-reference-bias-gradient-cleanup`.
+- Final stack PR, after [#16150](https://github.com/ROCm/rocm-libraries/pull/16150).
 - Work tracking: [AIHPBLAS-5257](https://amd-hub.atlassian.net/browse/AIHPBLAS-5257).
 
 ## Device / Architecture Coverage
@@ -867,130 +857,159 @@ Host tests exercise both OCP and fnuz Float8 encodings where applicable. Numeric
 ## Risk level
 
 Moderate (3/5): extends blocked-reference eligibility and adds a parallel maximum reduction. Independent numerical checks cover the output stage and worker limits. Performance benefit has not been measured for this final change.
+
+
+[AIHPBLAS-5257]: https://amd-hub.atlassian.net/browse/AIHPBLAS-5257?atlOrigin=eyJpIjoiNWRkNTljNzYxNjVmNDY3MDlhMDU5Y2ZhYzA5YTRkZjUiLCJwIjoiZ2l0aHViLWNvbS1KU1cifQ
 ````
 
-## Remaining reply draft 1
+## Published reply — PR #15275: Tony — Float8 cast nonfinite cases
 
-**Draft reply to Tony — not posted:**
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4604838396)
 
-Target: Tony: https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4568213252
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4568213252)
 
+````markdown
 Added +Inf, -Inf and NaN to all four cast tables, with explicit expectations for each reference path and `std::isnan` checks for NaN. OCP E4M3 and both fnuz types convert either infinity to NaN; OCP E5M2 preserves signed infinity. All four preserve NaN. The cast test and all 35 reference gtests pass locally.
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-## Remaining reply draft 2
+## Published reply — PR #15275: Newling — Float8 driver selectors
 
-**Draft reply to Newling — not posted:**
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15275#issuecomment-6958973018)
 
-Target: Newling: a general comment on https://github.com/ROCm/rocm-libraries/pull/15275 referring to https://github.com/newling/rocm-libraries/commit/aef34bafaad8296981db27b07f6f2fe96bd6258e
+````markdown
+@newling Added the storage, compute-input, output and alpha/beta type selectors to the driver's runtime exception message, preserving the original exception text and exit code 1. The mixed Float8/Half error now identifies the incompatible default compute-input types. Both supported alternatives pass for both encodings and operand directions, and all 675 driver CTests pass locally.
 
-Added the storage, compute-input, output and alpha/beta type selectors to the driver's runtime exception message, preserving the original exception text and exit code 1. The mixed Float8/Half error now identifies the incompatible default compute-input types. Both supported alternatives pass for both encodings and operand directions, and all 675 driver CTests pass locally.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+## Published reply — PR #15276: Newling — complex C/D aliasing
 
-## Remaining reply draft 3
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15276#issuecomment-6958973633)
 
-**Draft reply to newling — not posted:**
-
-Target: Newling: a general comment on https://github.com/ROCm/rocm-libraries/pull/15276 referring to the complex C/D alias finding
-
+````markdown
 @newling Agreed. #15276 now inherits the shared C/D aliasing correction from #15274. I added ComplexInPlaceCDPreservesBetaInput for complex float and complex double, covering your `(11,1)` example and a case with imaginary A/B values and complex alpha/beta. Both cases failed on the old fast path and pass with the inherited fix. The production correction stays in #15274; this PR adds the complex regression.
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-## Remaining reply draft 4
+## Published reply — PR #15277: Tony — non-HPA bias-gradient fallback
 
-##### Draft reply to Tony — not posted
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4604839593)
 
-Reply to [Tony's non-HPA inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214232):
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214232)
 
-> Agreed. I've implemented the guard locally for non-HPA gradient+bias problems with `H_H_H` or `B_B_S`, preserving the slow path's Half/BFloat16 accumulation. The regression reproduced bias 4096 versus 2048 for Half and 512 versus 256 for BFloat16. With the guard, both requested paths return 2048 and 256. HPA configurations remain fast-eligible and retain float accumulation. All 48 focused reference tests and 795 CPU-driver CTests passed. The code is committed locally and has not been pushed.
+````markdown
+Agreed. I've implemented the guard locally for non-HPA gradient+bias problems with `H_H_H` or `B_B_S`, preserving the slow path's Half/BFloat16 accumulation. The regression reproduced bias 4096 versus 2048 for Half and 512 versus 256 for BFloat16. With the guard, both requested paths return 2048 and 256. HPA configurations remain fast-eligible and retain float accumulation. All 48 focused reference tests and 795 CPU-driver CTests passed. The code is committed and published in this PR.
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-## Remaining reply draft 5
+## Published reply — PR #15277: Newling — non-HPA bias-gradient fallback
 
-##### Draft reply to Newling — not posted
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6958975655)
 
-Post on #15277, referring to [Newling's non-HPA finding](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items):
+````markdown
+@newling, I've taken the non-HPA eligibility guard from [de7815c2e50](https://github.com/newling/rocm-libraries/commit/de7815c2e5066f6b2ff76e589732a3b8a671e402) in #15277. The new regression reproduced the Half and BFloat16 bias-sum differences before the fix; afterward, both requested paths preserve the narrow sums. HPA controls retain fast eligibility and float accumulation, and the eligibility checks cover all three bias sources. All 48 focused reference tests and 795 CPU-driver CTests passed locally. The code is committed and published in this PR. The separate cleanup/error-reporting fix is in [#16150](https://github.com/ROCm/rocm-libraries/pull/16150), which closes #16120.
 
-> @newling, I've taken the non-HPA eligibility guard from [de7815c2e50](https://github.com/newling/rocm-libraries/commit/de7815c2e5066f6b2ff76e589732a3b8a671e402) in #15277. The new regression reproduced the Half and BFloat16 bias-sum differences before the fix; afterward, both requested paths preserve the narrow sums. HPA controls retain fast eligibility and float accumulation, and the eligibility checks cover all three bias sources. All 48 focused reference tests and 795 CPU-driver CTests passed locally. The code is committed locally and has not been pushed. The separate cleanup/error-reporting fix remains tracked in #16120.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+## Published reply — PR #15278: Newling — MX-tail NaN assertion
 
-## Remaining reply draft 6
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15278#issuecomment-6958976360)
 
-##### Draft reply to Newling — not posted
+````markdown
+Thanks, @newling. I applied your direct vector comparison and kept the per-case context with `SCOPED_TRACE`. The all-NaN control passed with the old assertion and failed with the corrected one. After removing the control, all 50 focused reference tests and 813 standard CPU-driver tests passed locally. The change is committed and published in this PR.
 
-Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the linked exact-tail assertion finding.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-Thanks, @newling. I applied your direct vector comparison and kept the per-case context with `SCOPED_TRACE`. The all-NaN control passed with the old assertion and failed with the corrected one. After removing the control, all 50 focused reference tests and 813 standard CPU-driver tests passed locally. The change is committed locally and has not been pushed.
+## Published reply — PR #15278: Tony — equal-block slow tails
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4604840794)
 
-## Remaining reply draft 7
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214899)
 
-##### Draft reply to Tony — not posted
+````markdown
+You're right: the production slow reference already clamps its final MX segment at K, from #13630. The over-read claim was incorrect for equal blocks. I removed the driver's obsolete K restriction, corrected its help and comments, converted the two old rejection cases into positive slow-tail tests and added 15 slow counterparts for the equal-block fast cases. All 828 standard driver tests and 50 focused reference tests pass locally. The asymmetric-block rejection remains. I've also published the description correction and removed the historical scratch-build failures as evidence of a current production over-read; I have not re-established the precise cause/version of that old experiment. The code is committed and published in this PR.
 
-Target: [Tony's driver thread](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214899); also addresses [his CMake thread](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214917).
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-You're right: the production slow reference already clamps its final MX segment at K, from #13630. The over-read claim was incorrect for equal blocks. I removed the driver's obsolete K restriction, corrected its help and comments, converted the two old rejection cases into positive slow-tail tests and added 15 slow counterparts for the equal-block fast cases. All 828 standard driver tests and 50 focused reference tests pass locally. The asymmetric-block rejection remains. I've also drafted the description correction and removed the historical scratch-build failures as evidence of a current production over-read; I have not re-established the precise cause/version of that old experiment. The code is committed locally and has not been pushed.
+## Published reply — PR #15278: Newling — equal-block slow tails
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15278#issuecomment-6958978253)
 
-## Remaining reply draft 8
+````markdown
+Thanks, @newling. I applied the equal-block slow-tail correction from your suggestion and added 15 slow counterparts for the existing equal-block fast cases. The converted K=33 test reproduced the driver rejection before the fix and passed afterward. All 828 standard driver tests and 50 focused reference tests pass locally. The asymmetric-block restriction remains, and the description correction is published. The code is committed and published in this PR.
 
-##### Draft reply to Newling — not posted
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the [linked slow-tail suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#remove-the-obsolete-equal-block-slow-tail-rejection).
+## Published reply — PR #15278: Newling — shared negative-test registration
 
-Thanks, @newling. I applied the equal-block slow-tail correction from your suggestion and added 15 slow counterparts for the existing equal-block fast cases. The converted K=33 test reproduced the driver rejection before the fix and passed afterward. All 828 standard driver tests and 50 focused reference tests pass locally. The asymmetric-block restriction remains, and the description correction is drafted. The code is committed locally and has not been pushed.
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15278#issuecomment-6958979108)
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+````markdown
+Thanks, @newling. The stack already has the shared diagnostic checker, so I migrated the remaining 11 negative tests to it. All 36 now require exit code 1 and the expected message. I also moved the four Float8/complex injected-failure cases through the shared registration helper so they enter the standard and installed suites. An unrelated argument error passed the old registration and failed the corrected one; the installed checker also rejected a deliberately incorrect expected diagnostic. All 832 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed and published in this PR.
 
-## Remaining reply draft 9
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-##### Draft reply to Newling — not posted
+## Published reply — PR #15278: Newling — fast-path rejection diagnostics
 
-Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the [linked shared negative-test suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#share-negative-test-checking-across-the-stack).
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15278#issuecomment-6958979825)
 
-Thanks, @newling. The stack already has the shared diagnostic checker, so I migrated the remaining 11 negative tests to it. All 36 now require exit code 1 and the expected message. I also moved the four Float8/complex injected-failure cases through the shared registration helper so they enter the standard and installed suites. An unrelated argument error passed the old registration and failed the corrected one; the installed checker also rejected a deliberately incorrect expected diagnostic. All 832 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed locally and have not been pushed.
+````markdown
+Thanks, @newling. I applied the optional rejection-reason output and included it in the driver's `--tryFastPath` error. Every existing eligibility condition is preserved, including the Scalar Half-to-Float8 and non-HPA bias-gradient fallbacks added during review. Normal client fallback stays silent. The new AMAX-D and MX block-4 cases check the specific messages through the shared diagnostic checker. The AMAX-D case failed with the old generic error and passed after the change. All 834 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed and published in this PR.
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-## Remaining reply draft 10
+## Published reply — PR #15278: Tony — Test Result evidence
 
-##### Draft reply to Newling — not posted
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15278#issuecomment-6958980491)
 
-Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the [linked eligibility-diagnostic suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#expose-the-eligibility-reason-to-the-driver).
-
-Thanks, @newling. I applied the optional rejection-reason output and included it in the driver's `--tryFastPath` error. Every existing eligibility condition is preserved, including the Scalar Half-to-Float8 and non-HPA bias-gradient fallbacks added during review. Normal client fallback stays silent. The new AMAX-D and MX block-4 cases check the specific messages through the shared diagnostic checker. The AMAX-D case failed with the old generic error and passed after the change. All 834 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed locally and have not been pushed.
-
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
-
-## Remaining reply draft 11
-
-##### Draft reply to Tony — not posted
-
-Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), responding to the CI/Test Result paragraph in [Tony's review](https://github.com/ROCm/rocm-libraries/pull/15278#pullrequestreview-5897491239).
-
+````markdown
 Thanks, Tony. I rechecked the CI evidence for published head `e24bb5950c6eacb30a5eb2e201d7e5fba9af6848`. [Math CI on gfx950](https://math-ci.amd.com/job/rocm-libraries/job/preliminary/job/hipblaslt/job/PR-15278/7/execution/node/1115/log) passed the affected `mxfp4_mxfp4_bf16_tn_act.yaml` configuration, with 239 passed and 495 skipped overall. [GitHub Actions on gfx942](https://github.com/ROCm/rocm-libraries/actions/runs/42914665365/job/130345001958) passed with 164 passed and 570 skipped, but skipped that gfx950-only configuration.
 
-The refreshed description draft links those results and separately records local validation through `dafba8ce355d`: 834 driver tests passed in both build and installed suites, and all 50 focused installed reference tests passed. Those review commits have not been pushed or run by shared CI. The draft removes the stale "not built or tested" and "checks are pending" statements and the production over-read claim for equal blocks. The precise cause/version of the old scratch-build experiment remains unverified.
+The refreshed description links those results and separately records local validation through `dafba8ce355d`: 834 driver tests passed in both build and installed suites, and all 50 focused installed reference tests passed. Those review commits are now published; passing shared CI for the new head has not yet been verified. The description removes the stale "not built or tested" and "checks are pending" statements and the production over-read claim for equal blocks. The precise cause/version of the old scratch-build experiment remains unverified.
 
-Current validation supplement: the integrated standard build and installed suites each pass 925/925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Code remains local and shared CI has not run this head.
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-## New integration replies
+## Published reply — PR #15259: Newling — separate AMAX-D PR
 
-Target: [Newling’s AMAX-D request on #15259](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5879565945).
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15259#issuecomment-6958981235)
 
-@newling I implemented AMAX-D in a separate final stack branch, after the bias-gradient correctness PR. It uses tile and worker maxima, merged after the parallel loop, and samples at the slow path’s epilogue stage. Ten independent gtests pass at worker limits 1, 3 and 8, and the integrated build/installed suites each pass 925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. #15259 stays focused on the slow-path lock optimization. The implementation is committed locally; the new PR and shared CI remain pending.
+````markdown
+@newling I implemented AMAX-D in a separate final stack PR [#16151](https://github.com/ROCm/rocm-libraries/pull/16151), after the bias-gradient correctness PR [#16150](https://github.com/ROCm/rocm-libraries/pull/16150). It uses tile and worker maxima, merged after the parallel loop, and samples at the slow path’s epilogue stage. Ten independent gtests pass at worker limits 1, 3 and 8, and the integrated build/installed suites each pass 925 CTests at `4135e6d96f2df606404ab51af3214a8b2f4a3427`. #15259 stays focused on the slow-path lock optimization. The implementation is committed and published; passing shared CI for the published head remains to be verified.
 
-Target: [Tony’s large-K note on #15266](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212035).
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
 
-I integrated #15765 below this branch, removed the float-per-K precision restriction, and added K=1044 cases for all six Int8 type combinations and all four layouts. Integer-alpha ScaleAB cases keep smaller output-range dimensions so the driver’s checked Int32 epilogue remains valid. The matching driver/test comments and description draft now describe the completed integer reduction. The integrated build and installed suites each pass 925 CTests; code and the description refresh remain local.
+## Published reply — PR #15266: Tony — large-K Int8 integration
 
-Target: [Tony’s exact-sum note on #15274](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4568212613).
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4604842893)
 
-With #15765 below this branch, the regression now checks both references against 16,790,292 and retains the independent old-float-summation witness. The comments specify wrapping for the fast reduction and corrected slow float-alpha reduction; slow integer-alpha arithmetic keeps its inherited behavior. The C/D alias correction is also retained through the restack. The integrated standard build and installed suites each pass 925 CTests. These commits remain local.
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212035)
+
+````markdown
+I integrated #15765 below this branch, removed the float-per-K precision restriction, and added K=1044 cases for all six Int8 type combinations and all four layouts. Integer-alpha ScaleAB cases keep smaller output-range dimensions so the driver’s checked Int32 epilogue remains valid. The matching driver/test comments and description now describe the completed integer reduction. The integrated build and installed suites each pass 925 CTests; the code and description refresh are now published.
+
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
+
+## Published reply — PR #15274: Tony — both-path exact-sum regression
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4604843542)
+
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4568212613)
+
+````markdown
+With #15765 below this branch, the regression now checks both references against 16,790,292 and retains the independent old-float-summation witness. The comments specify wrapping for the fast reduction and corrected slow float-alpha reduction; slow integer-alpha arithmetic keeps its inherited behavior. The C/D alias correction is also retained through the restack. The integrated standard build and installed suites each pass 925 CTests. These commits are now published.
+
+Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
+````
