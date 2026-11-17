@@ -1512,7 +1512,17 @@ Branch: `users/alvasile/tl-speedup-25-reference-fast-path-float8-output`. Base: 
 
 **Validation:** all 35 branch reference gtests and all 675 CPU-driver CTests pass. A temporary combined CPU reference, constructed by applying only commit `6d06af3ff59c224c92a468920120797edd2212fa`'s slow Vector patch to the guarded #15275 source, passes 38 reference gtests and all 2,304 independent CPU cases on both default and forced-slow paths. Exactly 128 Scalar narrowing cases fall back and all 128 Vector narrowing cases stay eligible. On #15275 before insertion, all 2,304 default results pass while forced-slow Vector retains the known 96 errors owned by the preceding correctness PR. No stack metadata or base was changed by this validation. [Commands, raw results and scope](/tmp/tl-pr15275-scalar-guard-20261117/README.md) and [summary](/tmp/tl-pr15275-scalar-guard-20261117/summary.json).
 
-**Next feedback item:** [Tony's non-finite cast coverage request](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4568213252): add positive/negative infinity and NaN cases to the four Float8/BFloat8 cast tests, checking explicit expected values and using `isnan` where appropriate. The Test Result description refresh remains a separate pending item.
+#### Non-finite output casts — implemented locally November 17, 2026
+
+**Agreed and implemented:** [Tony's cast-coverage request](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4568213252) is covered by adding positive infinity, negative infinity and NaN to each of the four existing output-cast tables. Each reference path is checked against the explicit expected result. OCP E4M3 and both fnuz types turn either infinity into NaN; OCP E5M2 preserves signed infinity. All four preserve NaN. The helper checks NaN with `std::isnan` on each path, and the source comment now distinguishes finite saturation from non-finite conversion.
+
+**Validation:** the added NaN cases first exposed the helper's invalid NaN equality assertions. After correcting the helper, the focused cast test and all 35 reference gtests pass. The test remains in the existing standard-tier C++ test registration. No production code or CI registration changed. Shared CI has not run this unpublished change. [Local test logs, XML and summary](/tmp/tl-pr15275-nonfinite-casts-20261117/README.md).
+
+**Draft reply to Tony — not posted:**
+
+> Added +Inf, -Inf and NaN to all four cast tables, with explicit expectations for each reference path and `std::isnan` checks for NaN. OCP E4M3 and both fnuz types convert either infinity to NaN; OCP E5M2 preserves signed infinity. All four preserve NaN. The cast test and all 35 reference gtests pass locally.
+
+**Next feedback item:** [Tony's Test Result description request](https://github.com/ROCm/rocm-libraries/pull/15275#pullrequestreview-5897489454). The live PR description still says this split branch has not been built or tested and its automated checks are pending. Replace those statements with results tied to the tested revision, distinguish unpublished local changes from remote CI results, and retain the original-branch timing measurements with their existing limits. Refresh the cast wording to specify finite saturation and the now-tested non-finite behavior.
 
 ### Reviews (1)
 
