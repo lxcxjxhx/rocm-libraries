@@ -2687,9 +2687,11 @@ Run the root and hipBLASLt pre-commit hooks on the changed files.
 
 ## Test Result
 
-Local review worktree, Release build with the ROCm compiler: 834 standard driver CTests passed in each of the build and installed trees, and 50 focused installed reference gtests passed. The K=33 slow-tail test failed at the driver rejection before the fix and passed afterward. The exact-tail test's temporary all-NaN control passed with the old assertion and failed with the direct vector comparison. A temporary unrelated argument error passed an old negative test but failed the diagnostic-checked version; an incorrect expected-diagnostic control also failed in the installed package. The new forced-AMAX-D test also failed with the generic error before the diagnostic change and passed afterward. The temporary changes were removed before normal validation.
+Published head `e24bb5950c6eacb30a5eb2e201d7e5fba9af6848`: [Math CI's gfx950 common suite](https://math-ci.amd.com/job/rocm-libraries/job/preliminary/job/hipblaslt/job/PR-15278/7/execution/node/1115/log) passed with 239 passed and 495 skipped, including `gemm/gfx950/mxfp4_mxfp4_bf16_tn_act.yaml`. [GitHub Actions on gfx942](https://github.com/ROCm/rocm-libraries/actions/runs/42914665365/job/130345001958) passed with 164 passed and 570 skipped; it skipped that gfx950-only configuration.
 
-These are host numerical checks. Shared CI has not run on the local review commits, and no new GPU or performance measurement is claimed. The original scratch-build failures do not establish a production slow-path over-read at the current base.
+Local review commits through `dafba8ce355d`, Release build with the ROCm compiler: 834 standard driver CTests passed in each of the build and installed trees, including all 38 diagnostic-checked negative cases. All 50 focused installed reference gtests and the scoped root/component hooks passed. Temporary controls confirmed that the tests reject NaN output and unrelated driver errors. The slow-tail and AMAX-D diagnostic regressions failed before their respective changes and passed afterward.
+
+The local review commits have not been pushed or run by shared CI. Installed checks used a standalone TensileLite test package with local ROCm runtime dependencies. These local checks provide host numerical and registration evidence; no new GPU or performance measurement is claimed for those commits.
 
 ## Related
 
@@ -2699,7 +2701,7 @@ These are host numerical checks. Shared CI has not run on the local review commi
 
 ## Device / Architecture Coverage
 
-CPU reference and driver changes; no GPU kernel code changes. The affected common MX configuration runs on gfx950. Its device-run evidence must be recorded separately from host numerical validation.
+CPU reference and driver changes; no GPU kernel code changes. The published-head gfx950 run covers the original MX-tail change. The local review fixes have CPU numerical validation; gfx950 validation of the final pushed head remains pending.
 
 ## Submission Checklist
 
@@ -2742,13 +2744,25 @@ Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278)
 
 Thanks, @newling. I applied the optional rejection-reason output and included it in the driver's `--tryFastPath` error. Every existing eligibility condition is preserved, including the Scalar Half-to-Float8 and non-HPA bias-gradient fallbacks added during review. Normal client fallback stays silent. The new AMAX-D and MX block-4 cases check the specific messages through the shared diagnostic checker. The AMAX-D case failed with the old generic error and passed after the change. All 834 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed locally and have not been pushed.
 
-##### Next item — Tony's published-head Test Result refresh
+##### Tony's published-head Test Result refresh — drafted locally
 
-[Tony's review](https://github.com/ROCm/rocm-libraries/pull/15278#pullrequestreview-5897491239) asks the description to identify completed testing for the published head rather than say this split branch was never built or tested. Live PR metadata still reports `e24bb5950c6eacb30a5eb2e201d7e5fba9af6848`, and its body retains "This split branch has not been built or tested" and "Automated GitHub checks are pending."
+[Tony's review](https://github.com/ROCm/rocm-libraries/pull/15278#pullrequestreview-5897491239) asks the description to identify completed testing for the published head rather than say this split branch was never built or tested.
 
-**Evidence:** the cached source logs and SCM metadata were rechecked for that head. [Math CI's gfx950 common log](https://math-ci.amd.com/job/rocm-libraries/job/preliminary/job/hipblaslt/job/PR-15278/7/execution/node/1115/log) reports the changed `mxfp4_mxfp4_bf16_tn_act.yaml` config PASSED, with **239 passed and 495 skipped** in the common suite. The [GitHub Actions gfx942 job](https://github.com/ROCm/rocm-libraries/actions/runs/42914665365/job/130345001958) also passed, with **164 passed and 570 skipped**, but explicitly skipped this gfx950-only config. The Math CI PR SCM branch and GitHub job both match the published head. Sources are saved in `/tmp/tl-reference-timing-20261116.XMUrXl/`; refreshed PR status is in `/tmp/tl-pr15278-eligibility-20261117/live-pr15278.json`.
+**Agreed resolution:** refreshed the description draft above. Test Result now links the published-head gfx950 and gfx942 common-suite results and gives their exact pass/skip counts. It separately records the 834 build-tree and installed driver tests and 50 focused reference tests at local code commit `dafba8ce355d`. Device / Architecture Coverage states that the published gfx950 run covers the original MX-tail change, while shared CI and gfx950 validation of the unpushed review fixes remain pending. Historical scratch-build failures and timings are excluded from current-head correctness claims. The description and reply remain unpublished.
 
-**Recommendation, awaiting discussion:** replace the stale testing statements with linked published-head CI results and keep the new local validation in a separate paragraph, stating that those commits have not been pushed or exercised by shared CI. Keep original scratch-build timings qualified as historical and avoid treating them as evidence for a current production slow-path over-read. This requires a description draft and a draft reply to Tony; no additional code change is indicated.
+**Evidence refresh:** live PR metadata still reports `e24bb5950c6eacb30a5eb2e201d7e5fba9af6848`. Its existing body retains the stale testing statements. Cached CI logs and SCM metadata were rechecked against that head: [Math CI's gfx950 common log](https://math-ci.amd.com/job/rocm-libraries/job/preliminary/job/hipblaslt/job/PR-15278/7/execution/node/1115/log) reports the affected `mxfp4_mxfp4_bf16_tn_act.yaml` configuration PASSED, with **239 passed and 495 skipped** overall. [GitHub Actions on gfx942](https://github.com/ROCm/rocm-libraries/actions/runs/42914665365/job/130345001958) reports **164 passed and 570 skipped**, including an explicit skip for that gfx950-only configuration. The local numerical counts match the saved test logs. The latest PR metadata, feedback lookup, description and reply drafts are saved in `/tmp/tl-pr15278-description-20261117/`.
+
+##### Draft reply to Tony — not posted
+
+Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), responding to the CI/Test Result paragraph in [Tony's review](https://github.com/ROCm/rocm-libraries/pull/15278#pullrequestreview-5897491239).
+
+Thanks, Tony. I rechecked the CI evidence for published head `e24bb5950c6eacb30a5eb2e201d7e5fba9af6848`. [Math CI on gfx950](https://math-ci.amd.com/job/rocm-libraries/job/preliminary/job/hipblaslt/job/PR-15278/7/execution/node/1115/log) passed the affected `mxfp4_mxfp4_bf16_tn_act.yaml` configuration, with 239 passed and 495 skipped overall. [GitHub Actions on gfx942](https://github.com/ROCm/rocm-libraries/actions/runs/42914665365/job/130345001958) passed with 164 passed and 570 skipped, but skipped that gfx950-only configuration.
+
+The refreshed description draft links those results and separately records local validation through `dafba8ce355d`: 834 driver tests passed in both build and installed suites, and all 50 focused installed reference tests passed. Those review commits have not been pushed or run by shared CI. The draft removes the stale "not built or tested" and "checks are pending" statements and the production over-read claim for equal blocks. The precise cause/version of the old scratch-build experiment remains unverified.
+
+##### Feedback queue after refresh
+
+A fresh GitHub lookup found one human review and the same two unresolved Tony inline threads on #15278, with no new human comments. Newling's source reviews on #15259 still link the same initial and final reviews archived below. The four Newling suggestions and Tony's slow-tail/code-comment requests are implemented locally; the description and replies are drafted. There is no additional undecided human feedback for this branch in the refreshed queue. Tony's threads remain open on the published source, which has not received the local fixes. Publication, CI on the final pushed code and the planned correctness-PR insertions remain outstanding stack work.
 
 ### Reviews (1)
 
