@@ -78,7 +78,7 @@ The new PR owns the slow-reference Vector correction and the GPU `MultipleBuffer
 
 **Implemented and committed locally:** commit `6d06af3ff59c224c92a468920120797edd2212fa` on `users/alvasile/tl-fix-float8-input-scaling`. The new branch is based on local #15274 at `d6af002f7a656236440771e1dfbc1eb69080f5ac`. Both new regressions were observed failing before their respective fixes, then passing. The final run passed 61 reference/argument gtests, including six new tests, and all 468 CPU-driver CTests. All 2,304 independent CPU cases pass on this base, where Float8 output remains fast-ineligible. The patched production runtime passed all 1,728 gfx942 GPU cases without the prototype's invocation replacement; the prior 32 failures are fixed and the other 1,696 numerical output arrays match baseline. Grouped argument construction is tested; grouped GPU execution has not been run. Evidence: [local reproduction and results](/tmp/tl-float8-scaling-fix-20261116/README.md) and [summary](/tmp/tl-float8-scaling-fix-20261116/summary.json).
 
-No issue or PR has been created, and the stack has not been modified. The Scalar guard on #15275 is implemented locally. Shared-CI/final-production gfx950 validation and actual stack insertion remain outstanding.
+No issue or PR has been created, and the correctness branch has not been inserted into the stack. The Scalar guard on #15275 is implemented locally. The November 17 restack through #15276 preserves the deferred correctness branch at its original commit. Shared-CI/final-production gfx950 validation and actual stack insertion remain outstanding.
 
 <a id="pr-15259"></a>
 
@@ -1838,11 +1838,29 @@ Branch: `users/alvasile/tl-speedup-26-reference-fast-path-complex`. Base: `users
 
 ### Feedback walkthrough — November 17, 2026
 
-#### Complex C/D aliasing — next item
+#### Complex C/D aliasing — implemented locally
 
 [Newling's linked review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15276_correctness_20261113.md#preserve-complex-c-until-the-epilogue-has-consumed-it) reports that writing an intermediate sum to D destroys C when they share storage. His example uses A = `(2,0)`, B = `(3,0)`, C = D = `(5,1)`, and alpha = beta = `(1,0)`: the expected result is `(11,1)`, while the reviewed fast path returns `(12,0)`.
 
-**Current source and recommendation:** local #15276 at `e51f9dd0374926ab594f582af2ed21a96628821a` still copies `cReg` to `curBatchD` before reading `curBatchC` and lacks `ComplexInPlaceCDPreservesBetaInput`. Local #15274 at `d6af002f7a656236440771e1dfbc1eb69080f5ac` already owns the shared production correction, which consumes the tile sum directly and reads C before the final D write. The new Float8 correctness branch inherits that correction. Carry it through the planned restack and add a complex in-place regression on #15276 for both complex float and complex double, with nonzero imaginary inputs and nonzero beta. The production correction belongs once in #15274. The remote #15276 head remains `5b4f85f05f2977d06f67cf5405eff41da6800f93`; no branch checkout, restack or implementation on #15276 has occurred for this walkthrough item.
+**Agreed implementation:** switched to `users/alvasile/tl-speedup-26-reference-fast-path-complex` and added `ComplexInPlaceCDPreservesBetaInput` through `SolveGemmCPU`. It covers complex float and complex double, sharing the C/D buffer with nonzero beta, using independent expected literals. Besides Newling's `(11,1)` example, it checks A = `(2,1)`, B = `(3,-2)`, initial C = `(5,1)`, alpha = `(1,-1)`, beta = `(2,1)`, and expected D = `(16,-2)`. Both cases run through the fast and slow paths.
+
+**Red before green:** the new regression failed on local head `e51f9dd0374926ab594f582af2ed21a96628821a` for both complex widths. Fast results were `(12,0)` and `(24,-3)` rather than `(11,1)` and `(16,-2)`; the slow-path controls passed. After snapshotting the reference-stack refs and metadata, `gh stack rebase --no-trunk --downstack` and its conflict continuations carried the existing production correction from #15274 through #15275 to #15276. The epilogue consumes `cReg`, reads the original C and writes final D. The shared production correction remains owned once by #15274, now at commit `516aacf703c`; #15276 adds the complex regression.
+
+**Restack integration:** preserved #15266's double CLI scalar parsing and shared `TypeInfo` metadata, migrated the later Float8 call sites and complex helper, and retained all option checks with their expected diagnostics. Kept #15275's Scalar-only Half-to-Float8 fallback, Vector eligibility, non-finite output-cast tests and runtime selector diagnostics. `git range-diff` shows the numerical fixes replayed unchanged, and the archive was byte-identical to the previous #15275 head before this entry was updated. Only #15274, #15275 and #15276 heads changed; #15259, #15266, #15277, #15278 and unrelated branches were unchanged. The deferred Float8 correctness branch remains at `6d06af3ff59c224c92a468920120797edd2212fa` and has not been inserted or published.
+
+**Validation:** Release builds of `tensilelite-tests` and `cpu-gemm-driver` succeeded. All **41 focused reference gtests** and **729 CPU driver CTests** passed, with zero failures or skips. The regression is selected by the existing standard-tier wildcard for `tensilelite-tests` and needs no new CI registration. Build logs, red/green results, XML reports, ref snapshots and range diffs are saved under `/tmp/tl-pr15276-complex-alias-20261117/`. Scoped root and hipBLASLt pre-commit hooks and the staged whitespace check passed; clang-format 18.1.4 was applied to the added C++ ranges. The component hook selected no Python tests. These are local CPU results. The published #15276 head remains `5b4f85f05f2977d06f67cf5405eff41da6800f93`; no code was pushed.
+
+**Draft reply to newling — not posted:**
+
+> @newling Agreed. #15276 now inherits the shared C/D aliasing correction from #15274. I added ComplexInPlaceCDPreservesBetaInput for complex float and complex double, covering your `(11,1)` example and a case with imaginary A/B values and complex alpha/beta. Both cases failed on the old fast path and pass with the inherited fix. The production correction stays in #15274; this PR adds the complex regression.
+
+#### Refresh Test Result with completed validation — next item for discussion
+
+[Tony's first description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) asks to replace the claims that this split branch has not been built/tested and that all checks are pending. A fresh read confirms those sentences remain in the GitHub description at published head `5b4f85f05f2977d06f67cf5405eff41da6800f93`.
+
+**Verified evidence:** the [Math CI TensileLite unit/CTest job](https://math-ci.amd.com/job/rocm-libraries/job/tensilelite-unit-codecov/job/hipblaslt/job/PR-15276/7/stages/) reports success for this head. The [TheRock gfx94X common-test log](https://github.com/ROCm/rocm-libraries/actions/runs/42914667575/job/130304234756) records passes for all five complex configs: `gemm/cgemm.yaml`, `gemm/zgemm.yaml`, `gemm/bufferLoadStore0.yaml`, `streamk/sk_cgemm_quick.yaml` and `streamk/sk_zgemm_quick.yaml`. The complete common-test run reports 164 passed and 570 skipped; those skips are other configurations, not these five. The local results above cover the newly restacked code and regression; remote CI has not run those unpushed changes.
+
+**Recommendation, pending discussion:** replace the two stale sentences in Test Result with the linked CTest and five-config results at the published SHA, and add the new local 41-gtest/729-driver result as local evidence. Keep the existing original-branch timing paragraph and its shared-host, single-run limitations. State that the new local commits still need PR CI after publication. This item concerns Test Result only; no GitHub description edit has been made.
 
 ### Reviews (1)
 
