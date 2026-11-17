@@ -1902,13 +1902,13 @@ Other results recorded on the original branch, same host:
 
 Verified that the full GitHub body matched the proposed text on read-back. The published head and base are unchanged; no code was pushed and no review reply was posted. Before/after descriptions and the PATCH/read-back records are saved under `/tmp/tl-pr15276-description-dependency-20261117/`.
 
-#### Correct the manual command so it runs the reference gtests — next item for discussion
+#### Correct the manual command so it runs the reference gtests — published
 
-[Newling's initial linked review, Tests section](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15276.md#tests) notes that a CTest name regex containing `ReferenceFastPath` does not select those gtests in a category-based build. #15276's current Test Plan still uses `ctest ... -R 'CPUGemm|ReferenceFastPath|ReferenceMXFastPath'` and claims it runs both the CPU driver tests and fast-path gtests.
+[Newling's initial linked review, Tests section](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15276.md#tests) notes that a CTest name regex containing `ReferenceFastPath` does not select those gtests in a category-based build. #15276's pre-update Test Plan used `ctest ... -R 'CPUGemm|ReferenceFastPath|ReferenceMXFastPath'` and claimed it ran both the CPU driver tests and fast-path gtests.
 
 **Verified selection:** the documented CTest filter selects **729 CPU driver tests and zero gtest categories** in the existing review build. Calling `tensilelite-tests` directly with `ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*` selects **40 gtests**, including the complex in-place regression and six parameterized MX free-tile cases. All 40 passed in a fresh run. The six parameterized cases were outside the earlier 41-test filter, so this run supplies their current local validation. The earlier 41-test result remains an accurate report of its selected tests. Discovery records and the new XML/log are saved under `/tmp/tl-pr15276-description-dependency-20261117/`.
 
-**Recommendation, pending discussion:** retain the configure/build steps, then document the CPU driver CTest and direct gtest runs separately:
+**Agreed implementation:** retained the configure/build steps and published separate CPU driver CTest and direct gtest commands in Test Plan:
 
 ```bash
 export OMP_NUM_THREADS=4 OMP_THREAD_LIMIT=8 OMP_DYNAMIC=FALSE KMP_BLOCKTIME=0
@@ -1918,11 +1918,20 @@ ctest --test-dir "$BUILD/tensilelite/tests" --output-on-failure \
   --gtest_filter='ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*'
 ```
 
-The gtests' existing standard-tier registration and #15259's local installed-suite integration already cover their shared-CI execution. This item corrects the manual Test Plan. The GitHub Test Plan has not been edited yet.
+The gtests' existing standard-tier registration and #15259's local installed-suite integration already cover their shared-CI execution. Verified an exact read-back of the full updated description and confirmed that only Test Plan changed. The published code head remains `5b4f85f05f2977d06f67cf5405eff41da6800f93`; no code was pushed and no reply was posted. Before/after descriptions and the PATCH/read-back records are saved under `/tmp/tl-pr15276-description-test-plan-20261117/`.
 
 **Other linked suggestions already satisfied:** the local restack preserved #15266's shared `TypeInfo` metadata and migrated the later complex helper; there is no private `TypeTraits` table. All seven complex option rejections now use the common `EXPECTED_ERROR` helper and name the unsupported option or combination. They passed in the 729-driver run. E/gradient checks introduced by later branches remain for those branches' walkthroughs.
 
 **Feedback refresh:** a fresh GitHub read found Tony's existing approval review, no inline comments and no human discussion comments on #15276. Bots remain outside the walkthrough per the user's earlier instruction. The immutable linked reviews are preserved below.
+
+#### Retain the documented non-finite complex-arithmetic boundary — next scope note
+
+[Newling's initial review, Scope decisions](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15276.md#scope-decisions) says: “Non-finite complex multiplication remains a documented compatibility boundary. The finite-data comparison does not establish identical behavior for overflow, NaNs, or every compiler/platform.” His [final correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15276_correctness_20261113.md#scope-decisions) also leaves that boundary unchanged.
+
+**Assessment:** this is an explicit scope decision in the linked reviews, rather than another requested production correction. The description retains its caveat about differing non-finite results. `ComplexMatchesSlowPathExactly` uses bounded finite random inputs; the complex arithmetic and alias regressions use finite worked examples. Their passing results do not qualify overflow/NaN behavior or every compiler/platform. No new non-finite complex comparison or platform qualification is claimed here.
+
+**Recommendation, pending discussion:** retain the caveat and accept this documented compatibility boundary for #15276, as Newling did. Keep the exact-agreement claim limited to the supported finite-result cases. Broader complex-arithmetic qualification would need a separate test matrix and decision; it is not included in this walkthrough fix. All requested actionable corrections for #15276 are otherwise implemented locally or published as description edits, while code publication and fresh PR CI remain pending. #15277 is the next branch after this scope note is settled.
+
 
 ### Reviews (1)
 
