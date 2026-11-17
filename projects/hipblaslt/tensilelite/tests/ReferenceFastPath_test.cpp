@@ -14,8 +14,8 @@
 #include <cstring>
 #include <limits>
 #include <random>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -1421,13 +1421,13 @@ TEST(ReferenceFastPath, GradientBiasFollowsElementsToValidate)
 
 TEST(ReferenceFastPath, BatchedBiasGradientReportsUnsupportedShape)
 {
-    for(auto src : {ContractionProblemGemm::A, ContractionProblemGemm::B,
-                    ContractionProblemGemm::D})
+    for(auto src :
+        {ContractionProblemGemm::A, ContractionProblemGemm::B, ContractionProblemGemm::D})
     {
         auto problem = makeGradientProblem(1, 1, 1, false, false, 2);
         setBiasGradient(problem, src);
         std::vector<float> a(2, 1.0f), b(2, 1.0f), c(2, 0.0f), d(2, 0.0f);
-        float bias = 99.0f;
+        float              bias = 99.0f;
         for(bool fast : {false, true})
         {
             SCOPED_TRACE(testing::Message() << "source " << src << ", fast " << fast);

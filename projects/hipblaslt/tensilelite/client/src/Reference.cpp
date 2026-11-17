@@ -1019,12 +1019,13 @@ namespace TensileLite
             }
             else
             {
-                std::string msg = "Bias-gradient reduction requires a 2-D tensor or a single batch; got "
-                                  + std::to_string(tensor.dimensions()) + " dimensions"
-                                  + (tensor.dimensions() == 3
-                                         ? " and " + std::to_string(tensor.sizes()[2]) + " batches"
-                                         : "")
-                                  + ".";
+                std::string msg
+                    = "Bias-gradient reduction requires a 2-D tensor or a single batch; got "
+                      + std::to_string(tensor.dimensions()) + " dimensions"
+                      + (tensor.dimensions() == 3
+                             ? " and " + std::to_string(tensor.sizes()[2]) + " batches"
+                             : "")
+                      + ".";
                 return msg;
             }
             return "";
