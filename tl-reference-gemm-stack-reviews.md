@@ -1924,13 +1924,19 @@ The gtests' existing standard-tier registration and #15259's local installed-sui
 
 **Feedback refresh:** a fresh GitHub read found Tony's existing approval review, no inline comments and no human discussion comments on #15276. Bots remain outside the walkthrough per the user's earlier instruction. The immutable linked reviews are preserved below.
 
-#### Retain the documented non-finite complex-arithmetic boundary — next scope note
+#### Retain the documented non-finite complex-arithmetic boundary — accepted; description narrowed
 
 [Newling's initial review, Scope decisions](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15276.md#scope-decisions) says: “Non-finite complex multiplication remains a documented compatibility boundary. The finite-data comparison does not establish identical behavior for overflow, NaNs, or every compiler/platform.” His [final correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15276_correctness_20261113.md#scope-decisions) also leaves that boundary unchanged.
 
 **Assessment:** this is an explicit scope decision in the linked reviews, rather than another requested production correction. The description retains its caveat about differing non-finite results. `ComplexMatchesSlowPathExactly` uses bounded finite random inputs; the complex arithmetic and alias regressions use finite worked examples. Their passing results do not qualify overflow/NaN behavior or every compiler/platform. No new non-finite complex comparison or platform qualification is claimed here.
 
-**Recommendation, pending discussion:** retain the caveat and accept this documented compatibility boundary for #15276, as Newling did. Keep the exact-agreement claim limited to the supported finite-result cases. Broader complex-arithmetic qualification would need a separate test matrix and decision; it is not included in this walkthrough fix. All requested actionable corrections for #15276 are otherwise implemented locally or published as description edits, while code publication and fresh PR CI remain pending. #15277 is the next branch after this scope note is settled.
+**Agreed and published:** retained the documented non-finite boundary and narrowed the GitHub description's equality claim to the tested finite-result cases. Newling requested no additional code or tests for this scope decision; the wording correction was our additional recommendation, approved by the user. Technical Details now says:
+
+> The tested finite-result cases match bitwise. Non-finite cases, including overflow from finite inputs, can differ between reference paths.
+
+The Risk level paragraph now uses the same scope and explicitly notes that overflow and other non-finite behavior can differ between paths. Verified an exact read-back of the full description and unchanged head, base and title. No code was pushed, no review reply was posted and no new numerical validation was performed. Before/after descriptions and publication records are saved under `/tmp/tl-pr15276-description-finite-20261117/`.
+
+Broader complex-arithmetic qualification would need a separate test matrix and decision. All requested actionable corrections for #15276 are now implemented locally or published as description edits; code publication and fresh PR CI remain pending. #15277 is the next branch in the walkthrough.
 
 
 ### Reviews (1)
