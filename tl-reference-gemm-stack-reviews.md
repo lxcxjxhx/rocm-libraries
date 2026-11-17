@@ -29,6 +29,7 @@ Future work includes planned additions to [stack #15515](https://github.com/ROCm
 ### 1. AMAX-D fast path — new PR at the end of the stack
 
 - [ ] Implement AMAX-D support in the CPU reference fast path as a new PR added to the top of this stack, after [#15278](https://github.com/ROCm/rocm-libraries/pull/15278) and the bias-gradient correctness follow-up below.
+- [ ] When fast AMAX-D becomes supported, replace `CPUGemm.fast_AmaxD_Rejected` with a positive fast-path D/AMAX-D regression; preserve rejection-diagnostic coverage with another unsupported case. The rejection check was added while addressing [Newling's eligibility-diagnostic suggestion](https://github.com/newling/rocm-libraries/commit/c7540acfc31bd3bfc502810669d0e598c14e3c57) in #15278.
 
 **Resolution for #15259:** [newling’s request to add AMAX-D to the fast path](https://github.com/ROCm/rocm-libraries/pull/15259#pullrequestreview-5879565945) will be handled by this new PR in the same stack. Keep #15259 focused on the slow-path lock and per-thread maximum change. The fast-path feature is planned; it has not been implemented by this resolution.
 
@@ -2665,7 +2666,8 @@ tensilelite-client checks generated GPU matrix multiplies against a CPU referenc
 - Remove the fast-path eligibility restriction that K must be divisible by both MX block sizes. Blocks must still be multiples of the fast path's 8-element K tile; each tile uses one scale from each side.
 - The production slow reference already stops its final segment at K, from [#13630](https://github.com/ROCm/rocm-libraries/pull/13630). The driver now stops its own expected-result sum at K and accepts equal-block tails with either execution preference. It continues rejecting asymmetric blocks on slow execution.
 - Add 18 fast-tail driver cases and 15 equal-block slow counterparts, and convert two old rejection cases into positive slow-tail checks. Two new gtests use independent sums over `k < K` with nonzero padding beyond K. The exact vector assertion also rejects NaN output and reports the case settings.
-- All 36 negative driver cases require exit code 1 and the intended diagnostic. The Float8 and complex injected-failure cases use the shared registration helper, which includes them in the standard and installed suites.
+- All 38 negative driver cases require exit code 1 and the intended diagnostic. The Float8 and complex injected-failure cases use the shared registration helper, which includes them in the standard and installed suites.
+- Forced fast execution now reports the first eligibility rejection reason. Optional diagnostic output leaves ordinary client fallback silent and preserves every eligibility condition. Two driver cases check the AMAX-D and MX block-size messages.
 
 ## Test Plan
 
@@ -2685,7 +2687,7 @@ Run the root and hipBLASLt pre-commit hooks on the changed files.
 
 ## Test Result
 
-Local review worktree, Release build with the ROCm compiler: 832 standard driver CTests passed in each of the build and installed trees, and 50 focused installed reference gtests passed. The K=33 slow-tail test failed at the driver rejection before the fix and passed afterward. The exact-tail test's temporary all-NaN control passed with the old assertion and failed with the direct vector comparison. A temporary unrelated argument error passed an old negative test but failed the diagnostic-checked version; an incorrect expected-diagnostic control also failed in the installed package. The temporary changes were removed before normal validation.
+Local review worktree, Release build with the ROCm compiler: 834 standard driver CTests passed in each of the build and installed trees, and 50 focused installed reference gtests passed. The K=33 slow-tail test failed at the driver rejection before the fix and passed afterward. The exact-tail test's temporary all-NaN control passed with the old assertion and failed with the direct vector comparison. A temporary unrelated argument error passed an old negative test but failed the diagnostic-checked version; an incorrect expected-diagnostic control also failed in the installed package. The new forced-AMAX-D test also failed with the generic error before the diagnostic change and passed afterward. The temporary changes were removed before normal validation.
 
 These are host numerical checks. Shared CI has not run on the local review commits, and no new GPU or performance measurement is claimed. The original scratch-build failures do not establish a production slow-path over-read at the current base.
 
@@ -2724,11 +2726,29 @@ Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278)
 
 Thanks, @newling. The stack already has the shared diagnostic checker, so I migrated the remaining 11 negative tests to it. All 36 now require exit code 1 and the expected message. I also moved the four Float8/complex injected-failure cases through the shared registration helper so they enter the standard and installed suites. An unrelated argument error passed the old registration and failed the corrected one; the installed checker also rejected a deliberately incorrect expected diagnostic. All 832 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed locally and have not been pushed.
 
-##### Next item — explain forced fast-path rejection
+##### Forced fast-path rejection reasons — implemented locally
 
-[Newling's eligibility-diagnostic suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#expose-the-eligibility-reason-to-the-driver), implemented in [his `c7540acfc31` commit](https://github.com/newling/rocm-libraries/commit/c7540acfc31bd3bfc502810669d0e598c14e3c57), applies to the current source. `isFastPathEligible` already knows each rejection reason, but its logger is disabled behind `if(false)`. The driver reports only that a problem is ineligible when `--tryFastPath` is requested, so users cannot tell which feature or geometry caused the rejection.
+[Newling's eligibility-diagnostic suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#expose-the-eligibility-reason-to-the-driver), implemented in [his `c7540acfc31` commit](https://github.com/newling/rocm-libraries/commit/c7540acfc31bd3bfc502810669d0e598c14e3c57), applies to the current source. The predicate knows the rejection reason, but its logger was disabled behind `if(false)`. Forced fast execution reported only that the problem was ineligible.
 
-**Recommendation, awaiting discussion:** add an optional rejection-reason output to the existing predicate and include that reason in the driver's forced-fast error. Replace internal labels with readable messages, preserving every current eligibility guard, including the locally added Scalar Half-to-Float8 and non-HPA bias-gradient restrictions. Keep ordinary client fallback silent. Add driver checks for forced AMAX-D and MX block 4 using the existing diagnostic helper. This next item has not been implemented. Tony's published-head CI/Test Result refresh remains a later item.
+**Agreed resolution:** added an optional `std::string* rejectionReason` output to `isFastPathEligible`. It clears the output on entry and reports the first rejection as a readable message. The driver requests it only for `--tryFastPath` and includes it in the error. Ordinary client fallback stays silent. All eligibility statements were checked against the previous commit after normalizing diagnostic strings, comments and whitespace; none changed, including the Scalar Half-to-Float8 and non-HPA bias-gradient restrictions.
+
+**Regression coverage:** added `fast_AmaxD_Rejected` and, outside Windows, `fast_f4_MX4_Rejected` through the existing diagnostic checker. They require exit code 1 and the AMAX-D or 8-element K-tile message. Only numerical AMAX-D cases receive the existing thread-limit variants; rejection exits before the reduction. Discovery confirmed that all 832 existing driver registrations are unchanged in both build and installed trees. The future AMAX-D implementation must replace its new rejection case with positive fast-path coverage; this is recorded in Future work.
+
+**Validation:** the forced-AMAX-D case failed before the implementation with "Missing diagnostic" and the generic eligibility error, then passed afterward. The Release ROCm compiler build rebuilt `tensilelite-tests`, `cpu-gemm-driver` and `tensilelite-client`. All **834/834 standard driver CTests passed in each of the build and installed trees**, including all **38 diagnostic-checked negatives**; all **50 focused installed reference gtests passed**. The standalone test package uses the TensileLite `tests` and `tensilelite` components plus the local ROCm OpenMP library; this is host numerical and installed-registration validation, with no new GPU or performance measurement. Evidence and the refreshed description draft are saved in `/tmp/tl-pr15278-eligibility-20261117/`.
+
+##### Draft reply to Newling — not posted
+
+Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the [linked eligibility-diagnostic suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#expose-the-eligibility-reason-to-the-driver).
+
+Thanks, @newling. I applied the optional rejection-reason output and included it in the driver's `--tryFastPath` error. Every existing eligibility condition is preserved, including the Scalar Half-to-Float8 and non-HPA bias-gradient fallbacks added during review. Normal client fallback stays silent. The new AMAX-D and MX block-4 cases check the specific messages through the shared diagnostic checker. The AMAX-D case failed with the old generic error and passed after the change. All 834 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed locally and have not been pushed.
+
+##### Next item — Tony's published-head Test Result refresh
+
+[Tony's review](https://github.com/ROCm/rocm-libraries/pull/15278#pullrequestreview-5897491239) asks the description to identify completed testing for the published head rather than say this split branch was never built or tested. Live PR metadata still reports `e24bb5950c6eacb30a5eb2e201d7e5fba9af6848`, and its body retains "This split branch has not been built or tested" and "Automated GitHub checks are pending."
+
+**Evidence:** the cached source logs and SCM metadata were rechecked for that head. [Math CI's gfx950 common log](https://math-ci.amd.com/job/rocm-libraries/job/preliminary/job/hipblaslt/job/PR-15278/7/execution/node/1115/log) reports the changed `mxfp4_mxfp4_bf16_tn_act.yaml` config PASSED, with **239 passed and 495 skipped** in the common suite. The [GitHub Actions gfx942 job](https://github.com/ROCm/rocm-libraries/actions/runs/42914665365/job/130345001958) also passed, with **164 passed and 570 skipped**, but explicitly skipped this gfx950-only config. The Math CI PR SCM branch and GitHub job both match the published head. Sources are saved in `/tmp/tl-reference-timing-20261116.XMUrXl/`; refreshed PR status is in `/tmp/tl-pr15278-eligibility-20261117/live-pr15278.json`.
+
+**Recommendation, awaiting discussion:** replace the stale testing statements with linked published-head CI results and keep the new local validation in a separate paragraph, stating that those commits have not been pushed or exercised by shared CI. Keep original scratch-build timings qualified as historical and avoid treating them as evidence for a current production slow-path over-read. This requires a description draft and a draft reply to Tony; no additional code change is indicated.
 
 ### Reviews (1)
 
