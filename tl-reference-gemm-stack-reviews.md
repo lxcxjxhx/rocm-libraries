@@ -2665,6 +2665,7 @@ tensilelite-client checks generated GPU matrix multiplies against a CPU referenc
 - Remove the fast-path eligibility restriction that K must be divisible by both MX block sizes. Blocks must still be multiples of the fast path's 8-element K tile; each tile uses one scale from each side.
 - The production slow reference already stops its final segment at K, from [#13630](https://github.com/ROCm/rocm-libraries/pull/13630). The driver now stops its own expected-result sum at K and accepts equal-block tails with either execution preference. It continues rejecting asymmetric blocks on slow execution.
 - Add 18 fast-tail driver cases and 15 equal-block slow counterparts, and convert two old rejection cases into positive slow-tail checks. Two new gtests use independent sums over `k < K` with nonzero padding beyond K. The exact vector assertion also rejects NaN output and reports the case settings.
+- All 36 negative driver cases require exit code 1 and the intended diagnostic. The Float8 and complex injected-failure cases use the shared registration helper, which includes them in the standard and installed suites.
 
 ## Test Plan
 
@@ -2684,7 +2685,7 @@ Run the root and hipBLASLt pre-commit hooks on the changed files.
 
 ## Test Result
 
-Local review worktree, Release build with the ROCm compiler: 828 standard driver CTests and 50 focused reference gtests passed. The K=33 slow-tail test failed at the driver rejection before the fix and passed afterward. The exact-tail test's temporary all-NaN control passed with the old assertion and failed with the direct vector comparison; the control was removed before normal validation.
+Local review worktree, Release build with the ROCm compiler: 832 standard driver CTests passed in each of the build and installed trees, and 50 focused installed reference gtests passed. The K=33 slow-tail test failed at the driver rejection before the fix and passed afterward. The exact-tail test's temporary all-NaN control passed with the old assertion and failed with the direct vector comparison. A temporary unrelated argument error passed an old negative test but failed the diagnostic-checked version; an incorrect expected-diagnostic control also failed in the installed package. The temporary changes were removed before normal validation.
 
 These are host numerical checks. Shared CI has not run on the local review commits, and no new GPU or performance measurement is claimed. The original scratch-build failures do not establish a production slow-path over-read at the current base.
 
@@ -2707,11 +2708,27 @@ CPU reference and driver changes; no GPU kernel code changes. The affected commo
 Moderate (3/5): more MX problems use the blocked CPU reference. Changing accumulation order can change reference values and affect GPU validation tolerances. Equal-block slow execution remains available and clamps the final segment at K; asymmetric slow blocks remain rejected.
 ````
 
-##### Next item — remaining negative tests and shared registration
+##### Remaining negative tests and shared registration — implemented locally
 
 [Newling's shared failure-test suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#share-negative-test-checking-across-the-stack) applies here. The stack already has `EXPECTED_ERROR` support in `add_cpu_gemm_test` and `CheckCpuGemmFailure.cmake`, requiring exit code 1 and the intended diagnostic. However, 11 driver rejection/injected-failure tests still use raw `WILL_FAIL`; an unrelated nonzero argument or validation failure can satisfy those tests. Four Float8/complex injected-failure cases also call `add_test` directly, bypassing the category/export helper; they have no standard label and do not enter the installed driver test list.
 
-**Recommendation, awaiting discussion:** reuse the existing diagnostic checker for the 11 remaining negative cases and register the four direct cases through `add_cpu_gemm_test`, so they join the standard and installed suites. Verify the intended failures and a control with an incorrect expected diagnostic. No new checker is needed, and this next item has not been implemented. Tony's published-head CI/Test Result refresh remains a later item.
+**Agreed resolution:** converted all 11 remaining negative cases to `EXPECTED_ERROR`, reusing `CheckCpuGemmFailure.cmake`. The four Float8/complex injected-failure cases now use `add_cpu_gemm_test`, which applies category labels, OpenMP limits, timeout and installed registration. All original driver arguments and test names are preserved. Both the build and installed suites now have 832 standard driver cases, including all 36 diagnostic-checked negative cases, with no raw `WILL_FAIL` cases. No new checker was added.
+
+**Validation:** temporarily changed `tf32_MixedA_Rejected` to use an invalid input type. The original `WILL_FAIL` registration incorrectly passed that unrelated argument error. The corrected registration failed with "Missing diagnostic" and the unrelated "Unknown computeInputA" output. Restored the original argument, then ran normal validation: **832/832 standard driver CTests passed in the build tree and 832/832 passed in the installed tree; all 50 focused installed reference gtests passed**. An installed-checker control with a deliberately incorrect expected diagnostic also failed as required. These are host numerical/registration checks, with no new GPU or performance measurement.
+
+The standalone test package was installed from the TensileLite subtree's `tests` and `tensilelite` components into `/tmp/tl-pr15278-negative-tests-20261117/install`; the ROCm compiler's `libomp.so` was staged in its runtime library directory. This checks the installed driver, checker and registrations with local ROCm runtime dependencies; it is not a full TheRock artifact run. Discovery records, test/control logs and snapshots are saved in `/tmp/tl-pr15278-negative-tests-20261117/`.
+
+##### Draft reply to Newling — not posted
+
+Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the [linked shared negative-test suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#share-negative-test-checking-across-the-stack).
+
+Thanks, @newling. The stack already has the shared diagnostic checker, so I migrated the remaining 11 negative tests to it. All 36 now require exit code 1 and the expected message. I also moved the four Float8/complex injected-failure cases through the shared registration helper so they enter the standard and installed suites. An unrelated argument error passed the old registration and failed the corrected one; the installed checker also rejected a deliberately incorrect expected diagnostic. All 832 standard driver tests passed in both build and installed trees, and all 50 focused installed reference tests passed locally. The changes are committed locally and have not been pushed.
+
+##### Next item — explain forced fast-path rejection
+
+[Newling's eligibility-diagnostic suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#expose-the-eligibility-reason-to-the-driver), implemented in [his `c7540acfc31` commit](https://github.com/newling/rocm-libraries/commit/c7540acfc31bd3bfc502810669d0e598c14e3c57), applies to the current source. `isFastPathEligible` already knows each rejection reason, but its logger is disabled behind `if(false)`. The driver reports only that a problem is ineligible when `--tryFastPath` is requested, so users cannot tell which feature or geometry caused the rejection.
+
+**Recommendation, awaiting discussion:** add an optional rejection-reason output to the existing predicate and include that reason in the driver's forced-fast error. Replace internal labels with readable messages, preserving every current eligibility guard, including the locally added Scalar Half-to-Float8 and non-HPA bias-gradient restrictions. Keep ordinary client fallback silent. Add driver checks for forced AMAX-D and MX block 4 using the existing diagnostic helper. This next item has not been implemented. Tony's published-head CI/Test Result refresh remains a later item.
 
 ### Reviews (1)
 
