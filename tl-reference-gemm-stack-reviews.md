@@ -2629,13 +2629,89 @@ Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278)
 
 Thanks, @newling. I applied your direct vector comparison and kept the per-case context with `SCOPED_TRACE`. The all-NaN control passed with the old assertion and failed with the corrected one. After removing the control, all 50 focused reference tests and 813 standard CPU-driver tests passed locally. The change is committed locally and has not been pushed.
 
-#### Next item — obsolete slow-tail rejection and over-read wording
+#### Obsolete slow-tail rejection and over-read wording — implemented locally
 
 **Feedback:** [Tony's driver comment](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214899), [his CMake comment](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214917) and [Newling's corresponding suggestion](https://github.com/newling/rocm-libraries/commit/b5d8bb5f9a552f26384ff3202fc100c608c10014) challenge the claim that the production slow reference reads past K for equal MX blocks.
 
 **Assessment:** confirmed in the current local source. `ReferenceSolution::SolveCPU` clamps its final segment with `std::min(innerMXLoop, boundSize[0] - i)`, already added by [#13630](https://github.com/ROCm/rocm-libraries/pull/13630). `SlowPathHandlesPartialFinalMXSegment` explicitly exercises slow execution at K=200 with block 128 and passed in the focused suite. The driver still rejects equal-block K tails and has an obsolete explanation. Its independent expected-result loop is a separate implementation, which this PR already changes to stop at K. The historical scratch-build failure is not evidence of a current production over-read; its precise cause/version has not been re-established.
 
-**Recommendation, awaiting discussion:** remove the driver's equal-block K restriction, correct the driver/CMake comments and PR Motivation/Technical Details/Risk wording, convert the two obsolete `BadK` rejection cases into positive slow-tail tests and add slow counterparts for the equal-block fast tail cases. Keep the asymmetric-block slow rejection: one scale per maximum-sized segment still misses smaller-side scale changes. No production slow-loop fix is needed for the equal-block tail item. No changes for this next item have been applied.
+**Agreed resolution:** removed the driver's equal-block K restriction and corrected its examples, command-line help and CMake comments. Converted the two obsolete `BadK` cases into positive slow-tail tests at K=33 and K=16. Added 15 slow counterparts for the equal-block fast tail cases using a shared fast/slow loop. Kept the asymmetric-block slow rejection: one scale per maximum-sized segment still misses smaller-side scale changes. No production slow-loop change was needed. The description correction and replies below are drafts; no GitHub changes have been published for this item.
+
+**Validation:** the converted K=33 test failed before the driver fix with the obsolete "must be a multiple" diagnostic and passed afterward. The final Release build passed all **828 standard CPU-driver CTests** and **50 focused reference gtests**. Registration checks confirmed that all 15 slow counterparts match the existing fast inputs without `--tryFastPath`, retain the standard category and expect success. Existing fast commands are unchanged. The full build tree has 832 driver registrations; four older injected-failure tests lack category labels and are outside this standard run. Logs and before/after snapshots are saved under `/tmp/tl-pr15278-slow-tail-20261117/`.
+
+##### Draft reply to Tony — not posted
+
+Target: [Tony's driver thread](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214899); also addresses [his CMake thread](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214917).
+
+You're right: the production slow reference already clamps its final MX segment at K, from #13630. The over-read claim was incorrect for equal blocks. I removed the driver's obsolete K restriction, corrected its help and comments, converted the two old rejection cases into positive slow-tail tests and added 15 slow counterparts for the equal-block fast cases. All 828 standard driver tests and 50 focused reference tests pass locally. The asymmetric-block rejection remains. I've also drafted the description correction and removed the historical scratch-build failures as evidence of a current production over-read; I have not re-established the precise cause/version of that old experiment. The code is committed locally and has not been pushed.
+
+##### Draft reply to Newling — not posted
+
+Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the [linked slow-tail suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#remove-the-obsolete-equal-block-slow-tail-rejection).
+
+Thanks, @newling. I applied the equal-block slow-tail correction from your suggestion and added 15 slow counterparts for the existing equal-block fast cases. The converted K=33 test reproduced the driver rejection before the fix and passed afterward. All 828 standard driver tests and 50 focused reference tests pass locally. The asymmetric-block restriction remains, and the description correction is drafted. The code is committed locally and has not been pushed.
+
+##### Corrected PR description draft — not published
+
+````markdown
+JIRA ID : AIHPBLAS-5257
+
+## Motivation
+
+tensilelite-client checks generated GPU matrix multiplies against a CPU reference. MX, or microscaling, formats share a scale across a block along K, the summation dimension. The blocked CPU fast path rejected problems with a partial final MX block, forcing them onto the per-element slow reference. This change allows those problems to use the fast path's existing loads that zero elements beyond K.
+
+## Technical Details
+
+- Remove the fast-path eligibility restriction that K must be divisible by both MX block sizes. Blocks must still be multiples of the fast path's 8-element K tile; each tile uses one scale from each side.
+- The production slow reference already stops its final segment at K, from [#13630](https://github.com/ROCm/rocm-libraries/pull/13630). The driver now stops its own expected-result sum at K and accepts equal-block tails with either execution preference. It continues rejecting asymmetric blocks on slow execution.
+- Add 18 fast-tail driver cases and 15 equal-block slow counterparts, and convert two old rejection cases into positive slow-tail checks. Two new gtests use independent sums over `k < K` with nonzero padding beyond K. The exact vector assertion also rejects NaN output and reports the case settings.
+
+## Test Plan
+
+Configure from `projects/hipblaslt` with `cmake --preset tensilelite -S . -B "$BUILD" -DTENSILELITE_BUILD_TESTING=ON`, then run:
+
+```sh
+cmake --build "$BUILD" --target tensilelite-tests cpu-gemm-driver --parallel 4
+OMP_THREAD_LIMIT=8 OMP_NUM_THREADS=4 KMP_BLOCKTIME=0 \
+  ctest --test-dir "$BUILD/tensilelite/tests" -L '^standard$' -R '^CPUGemm\.' \
+    --output-on-failure --parallel 4 --no-tests=error
+OMP_THREAD_LIMIT=8 OMP_NUM_THREADS=4 KMP_BLOCKTIME=0 \
+  "$BUILD/tensilelite/tests/tensilelite-tests" \
+    --gtest_filter='ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*'
+```
+
+Run the root and hipBLASLt pre-commit hooks on the changed files.
+
+## Test Result
+
+Local review worktree, Release build with the ROCm compiler: 828 standard driver CTests and 50 focused reference gtests passed. The K=33 slow-tail test failed at the driver rejection before the fix and passed afterward. The exact-tail test's temporary all-NaN control passed with the old assertion and failed with the direct vector comparison; the control was removed before normal validation.
+
+These are host numerical checks. Shared CI has not run on the local review commits, and no new GPU or performance measurement is claimed. The original scratch-build failures do not establish a production slow-path over-read at the current base.
+
+## Related
+
+- Work tracking: [AIHPBLAS-5257](https://amd-hub.atlassian.net/browse/AIHPBLAS-5257).
+- Depends on [#15277](https://github.com/ROCm/rocm-libraries/pull/15277).
+- Existing slow-tail clamp: [#13630](https://github.com/ROCm/rocm-libraries/pull/13630).
+
+## Device / Architecture Coverage
+
+CPU reference and driver changes; no GPU kernel code changes. The affected common MX configuration runs on gfx950. Its device-run evidence must be recorded separately from host numerical validation.
+
+## Submission Checklist
+
+- [x] Look over the contributing guidelines at https://github.com/ROCm/TheRock/blob/main/GOVERNANCE.md#pull-requests.
+
+## Risk level
+
+Moderate (3/5): more MX problems use the blocked CPU reference. Changing accumulation order can change reference values and affect GPU validation tolerances. Equal-block slow execution remains available and clamps the final segment at K; asymmetric slow blocks remain rejected.
+````
+
+##### Next item — remaining negative tests and shared registration
+
+[Newling's shared failure-test suggestion](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#share-negative-test-checking-across-the-stack) applies here. The stack already has `EXPECTED_ERROR` support in `add_cpu_gemm_test` and `CheckCpuGemmFailure.cmake`, requiring exit code 1 and the intended diagnostic. However, 11 driver rejection/injected-failure tests still use raw `WILL_FAIL`; an unrelated nonzero argument or validation failure can satisfy those tests. Four Float8/complex injected-failure cases also call `add_test` directly, bypassing the category/export helper; they have no standard label and do not enter the installed driver test list.
+
+**Recommendation, awaiting discussion:** reuse the existing diagnostic checker for the 11 remaining negative cases and register the four direct cases through `add_cpu_gemm_test`, so they join the standard and installed suites. Verify the intended failures and a control with an incorrect expected diagnostic. No new checker is needed, and this next item has not been implemented. Tony's published-head CI/Test Result refresh remains a later item.
 
 ### Reviews (1)
 
