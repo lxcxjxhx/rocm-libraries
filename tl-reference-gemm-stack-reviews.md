@@ -82,13 +82,13 @@ No issue or PR has been created, and the correctness branch has not been inserte
 
 ### 6. Bias-gradient reduction cleanup — new correctness PR at the top of the stack
 
-- [ ] File the prepared GitHub issue for the pre-existing slow-reference double-free and discarded reduction errors discovered during [#15277's review](https://github.com/ROCm/rocm-libraries/pull/15277). The issue and reply texts are prepared; publication awaits approval of the exact wording.
+- [x] Filed [#16120 — unsupported bias-gradient reduction errors](https://github.com/ROCm/rocm-libraries/issues/16120) for the pre-existing slow-reference double-free and discarded reduction errors discovered during [#15277's review](https://github.com/ROCm/rocm-libraries/pull/15277). Assigned to `Alex-Vasile`; verified the exact issue text and assignment by read-back.
 - [ ] Create a separate correctness PR using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d), sharing `reduceBiasGradient` between the reference paths, giving the workspace automatic ownership and propagating reduction errors for A, B and D bias sources.
 - [ ] Add that PR at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), after its existing final PR [#15278](https://github.com/ROCm/rocm-libraries/pull/15278). The planned AMAX-D fast-path PR remains a later final addition.
-- [ ] Include a closing reference to the new issue and link #15277 as the discovery PR. Preserve the current single-batch reduction limitation; add no batched bias-gradient implementation.
+- [ ] Include `Fixes #16120` in the new PR description and link #15277 as the discovery PR. Preserve the current single-batch reduction limitation; add no batched bias-gradient implementation.
 - [ ] Add `BatchedBiasGradientReportsUnsupportedShape` for A/B/D through both requested paths, verifying the diagnostic and unchanged bias. Demonstrate the regression failing before and passing after the fix, and require shared-CI execution.
 
-**Agreed resolution for #15277:** handle these inherited cleanup/error-reporting defects in the separate top-of-stack PR. [Tony's comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216) and [Newling's linked review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items) will receive replies linking the issue and this plan. The current source still contains the defect until the follow-up is integrated. The non-HPA accumulation finding is a separate feedback item.
+**Agreed resolution for #15277:** handle these inherited cleanup/error-reporting defects in the separate top-of-stack PR. [Tony's comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216) and [Newling's linked review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items) received verified replies linking [#16120](https://github.com/ROCm/rocm-libraries/issues/16120) and this plan: [reply to Tony](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4602603298) and [reply to Newling](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6954240221). The current source still contains the defect until the follow-up is integrated. The non-HPA accumulation finding is a separate feedback item.
 
 <a id="pr-15259"></a>
 
@@ -2218,7 +2218,9 @@ Branch: `users/alvasile/tl-speedup-27-reference-fast-path-use-e-gradient`. Base:
 
 **Agreed resolution:** file a GitHub issue tied to #15277, reply to Tony and Newling explaining that this is pre-existing, and create a separate correctness PR at the top of this stack using Newling's suggestion. That PR must close the issue and carry direct-reference regression coverage. See [Future work](#future-work), item 6. The fix is deferred; this record does not mark the production defect resolved.
 
-##### Prepared GitHub issue — publication pending exact-text approval
+##### Filed GitHub issue — #16120
+
+[GitHub issue #16120](https://github.com/ROCm/rocm-libraries/issues/16120) · Assignee: `Alex-Vasile` · State: Open. Published after exact-text approval and verified by read-back.
 
 **Title:** [TensileLite] Unsupported bias-gradient reductions double-free workspace or discard errors
 
@@ -2226,27 +2228,37 @@ Found while reviewing [#15277](https://github.com/ROCm/rocm-libraries/pull/15277
 
 When `ReductionCPU` returns an unsupported-shape error, the slow reference constructs `std::runtime_error` without throwing it. The D-source branch frees its workspace before discarding the error and later frees it again. The A/B branches also discard their errors.
 
-Reproducer: call `SolveGemmCPU` directly for a Float GEMM with M=N=K=1, two batches, A=B=1, C=0, alpha=1, beta=0, gradients enabled and a bias-gradient output initialized to 99. Select D, A or B as the bias source and try both execution preferences. Newling's direct probe reports a double-free abort for D; A/B return without reporting the unsupported shape. The driver rejects this combination before reaching the reference, so the regression must call the reference directly.
+Reproducer: call `SolveGemmCPU` directly for a Float GEMM with M=N=K=1, two batches, A=B=1, C=0, alpha=1, beta=0, gradients enabled and a bias-gradient output initialized to 99. Select D, A or B as the bias source and try both execution preferences. Newling’s direct probe reports a double-free abort for D; A/B return without reporting the unsupported shape. The driver rejects this combination before reaching the reference, so the regression must call the reference directly.
 
 Expected: a clear unsupported-shape exception, unchanged bias and no double-free. The existing reduction limitation remains: a 2-D tensor or a 3-D tensor with one batch.
 
-Fix plan: create a separate PR at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), after #15278, using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). Share `reduceBiasGradient`, give the workspace automatic ownership and propagate reduction errors. Include direct-reference regressions for A/B/D with both execution preferences, demonstrate failure before and success after the fix, and run them in shared CI. The new PR will close this issue.
+Fix plan: create a separate PR at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), after #15278, using [Newling’s suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). Share `reduceBiasGradient`, give the workspace automatic ownership and propagate reduction errors. Include direct-reference regressions for A/B/D with both execution preferences, demonstrate failure before and success after the fix, and run them in shared CI. The new PR will close this issue.
 
-Related feedback: [Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216) and [Newling's linked correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items).
+Related feedback: [Tony’s inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216) and [Newling’s linked correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items).
 
-##### Draft reply to Tony — publication pending
+##### Posted reply to Tony — verified
 
-Reply to [Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216):
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4602603298) to [Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214216). Verified its exact body and parent comment by read-back:
 
-> This is a pre-existing slow-reference issue, also present below #15277. We will track it in <ISSUE_URL> and handle it in a separate PR added at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). That PR will fix the double-free and discarded reduction errors, add direct-reference regressions, and close the issue.
+> This is a pre-existing slow-reference issue, also present below #15277. We will track it in https://github.com/ROCm/rocm-libraries/issues/16120 and handle it in a separate PR added at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), using [Newling’s suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). That PR will fix the double-free and discarded reduction errors, add direct-reference regressions, and close the issue.
 
-##### Draft reply to Newling — publication pending
+##### Posted reply to Newling — verified
 
-Post on #15277, addressed to Newling and identifying the cleanup finding from his stack-level linked review:
+[Posted on #15277](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6954240221), addressed to Newling and identifying the cleanup finding from his stack-level linked review. Verified the exact body by read-back:
 
 > @newling, regarding the cleanup finding in your linked #15277 review:
 >
-> This is a pre-existing slow-reference issue, also present below #15277. We will track it in <ISSUE_URL> and handle it in a separate PR added at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), using [Newling's suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). That PR will fix the double-free and discarded reduction errors, add direct-reference regressions, and close the issue.
+> This is a pre-existing slow-reference issue, also present below #15277. We will track it in https://github.com/ROCm/rocm-libraries/issues/16120 and handle it in a separate PR added at the top of [stack #15515](https://github.com/ROCm/rocm-libraries/stack/15515), using [Newling’s suggestion `66106f99d91`](https://github.com/newling/rocm-libraries/commit/66106f99d916da886beecc39e464681596074b6d). That PR will fix the double-free and discarded reduction errors, add direct-reference regressions, and close the issue.
+
+Publication records are saved under `/tmp/tl-pr15277-bias-gradient-followup-20261117/`. The issue and replies are published; the correctness PR has not been created. No production code was changed or pushed, and #15277's code head and base remain unchanged.
+
+#### Non-HPA bias-gradient accumulation — next item for discussion
+
+[Tony's inline comment](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4568214232) offers either keeping non-HPA gradient+bias problems on the slow path or explicitly choosing the wider float sum. [Newling's linked correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15277_correctness_20261113.md#actionable-items) demonstrates that this difference exceeds last-bit variation and proposes the conservative eligibility guard in [de7815c2e50](https://github.com/newling/rocm-libraries/commit/de7815c2e5066f6b2ff76e589732a3b8a671e402).
+
+**Source assessment:** non-HPA means higher-precision accumulation is disabled. The slow dispatch uses Half accumulation for `H_H_H` and BFloat16 accumulation for `B_B_S`; the default `ReferenceSolution` accumulator is the D type. The fast reduction uses float. With all-one Half inputs and M=K=1, N=4097, Newling reports identical D values of 1 but bias gradients of 2048 on slow and 4096 on fast. Repeated narrow additions and a float sum followed by one narrow conversion have different rounding. The existing driver and gradient tests use wider accumulation and do not cover this boundary. No new numerical or GPU validation is claimed in this assessment.
+
+**Recommendation, pending discussion:** take Newling's guard in #15277, which introduces gradient fast-path eligibility. Retain the slow path when gradient+bias is enabled, higher-precision accumulation is disabled and the type ID is `H_H_H` or `B_B_S`. Add the Half and BFloat16 rounding-boundary regression, comparing both requested paths against the explicit narrow results, and preserve fast eligibility for the HPA configurations. Update the description's numerical caveat to match this policy. This item is separate from the cleanup follow-up tracked in #16120, and no guard or reply has been applied yet.
 
 ### Reviews (1)
 
