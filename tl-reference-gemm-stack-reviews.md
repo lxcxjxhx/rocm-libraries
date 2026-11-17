@@ -1854,13 +1854,39 @@ Branch: `users/alvasile/tl-speedup-26-reference-fast-path-complex`. Base: `users
 
 > @newling Agreed. #15276 now inherits the shared C/D aliasing correction from #15274. I added ComplexInPlaceCDPreservesBetaInput for complex float and complex double, covering your `(11,1)` example and a case with imaginary A/B values and complex alpha/beta. Both cases failed on the old fast path and pass with the inherited fix. The production correction stays in #15274; this PR adds the complex regression.
 
-#### Refresh Test Result with completed validation — next item for discussion
+#### Refresh Test Result with completed validation — published
 
-[Tony's first description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) asks to replace the claims that this split branch has not been built/tested and that all checks are pending. A fresh read confirms those sentences remain in the GitHub description at published head `5b4f85f05f2977d06f67cf5405eff41da6800f93`.
+[Tony's first description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) asks to replace the claims that this split branch has not been built/tested and that all checks are pending. The pre-update snapshot confirmed those sentences in the GitHub description at published head `5b4f85f05f2977d06f67cf5405eff41da6800f93`.
 
 **Verified evidence:** the [Math CI TensileLite unit/CTest job](https://math-ci.amd.com/job/rocm-libraries/job/tensilelite-unit-codecov/job/hipblaslt/job/PR-15276/7/stages/) reports success for this head. The [TheRock gfx94X common-test log](https://github.com/ROCm/rocm-libraries/actions/runs/42914667575/job/130304234756) records passes for all five complex configs: `gemm/cgemm.yaml`, `gemm/zgemm.yaml`, `gemm/bufferLoadStore0.yaml`, `streamk/sk_cgemm_quick.yaml` and `streamk/sk_zgemm_quick.yaml`. The complete common-test run reports 164 passed and 570 skipped; those skips are other configurations, not these five. The local results above cover the newly restacked code and regression; remote CI has not run those unpushed changes.
 
-**Recommendation, pending discussion:** replace the two stale sentences in Test Result with the linked CTest and five-config results at the published SHA, and add the new local 41-gtest/729-driver result as local evidence. Keep the existing original-branch timing paragraph and its shared-host, single-run limitations. State that the new local commits still need PR CI after publication. This item concerns Test Result only; no GitHub description edit has been made.
+**Agreed implementation:** updated only Test Result on GitHub and verified an exact read-back. Replaced the stale build/test and pending-check claims with the linked CTest and five-config results at the published SHA. Added local validation at `62b23ec6fe7d2ed593b52f531765babf1b83b806`, explicitly stating that those commits remain unpushed and have not run PR CI. Preserved the original-branch timing paragraph, benchmark numbers and shared-host/single-run limitations. Other description sections and the published code head were unchanged. No review reply was posted. Before/after descriptions, the PATCH payload and read-back are saved under `/tmp/tl-pr15276-description-results-20261117/`.
+
+**Published Test Result text:**
+
+```markdown
+## Test Result
+
+At published head `5b4f85f05f2977d06f67cf5405eff41da6800f93`, the [Math CI TensileLite unit/CTest job](https://math-ci.amd.com/job/rocm-libraries/job/tensilelite-unit-codecov/job/hipblaslt/job/PR-15276/7/stages/) passed. [TheRock’s gfx94X common-test job](https://github.com/ROCm/rocm-libraries/actions/runs/42914667575/job/130304234756) ran and passed all five complex configs: `gemm/cgemm`, `gemm/zgemm`, `gemm/bufferLoadStore0`, `streamk/sk_cgemm_quick` and `streamk/sk_zgemm_quick`.
+
+Local Release validation of the restacked branch at `62b23ec6fe7d2ed593b52f531765babf1b83b806` passed 41 focused reference gtests and 729 CPU driver CTests, with zero failures or skips, including the new complex C/D aliasing regression. Scoped root and hipBLASLt pre-commit checks passed. These local commits remain unpushed; PR CI has not run them.
+
+Time saved: about 0.53 s of CPU reference time over the 5 complex configs (975.7 ms to 445.0 ms in total), with wall-time changes within noise. Measured on the original branch on a shared gfx950 MI355X host, 25 cores, `OMP_NUM_THREADS=25`, one run per side, replaying the run phase with the previous commit's client and this one.
+
+Other results recorded on the original branch, same host:
+
+- `cpu-gemm-driver`: complex float 256x256x4096 NN 62.2 ms to 37.9 ms; complex double 128x128x4096 with both operands conjugated 32.0 ms to 13.5 ms. All exact.
+- In the replay, all 315 complex reference calls took the fast path, and all 5 configs passed.
+- All `CPUGemm.*` tests passed (700, at 1, 3, 4 and 32 threads); full CTest 1356 of 1356. The 647 earlier `CPUGemm` commands gave the same output.
+```
+
+#### Remove the incorrect alpha-zero distinction — next item for discussion
+
+[Tony's second description note](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033) points out that the fast path also skips the K reduction when alpha is zero. The current description still says: “With `alpha == 0`, the slow path skips the K loop, while the fast path computes `0 * sum`.”
+
+**Verified source:** at the published SHA, [Reference.cpp:1708](https://github.com/ROCm/rocm-libraries/blob/5b4f85f05f2977d06f67cf5405eff41da6800f93/projects/hipblaslt/tensilelite/client/src/Reference.cpp#L1708) sets `doContraction` from `effectiveAlpha != AccumT(0)`. The A/B shadow copies are guarded by that flag at line 1733, and the ordinary K loop is guarded at line 1932. The tile sum starts at zero at line 1870. The local restacked source retains the same guards. Thus, when the selected alpha is zero, the fast path skips A/B contraction as the slow path does.
+
+**Recommendation, pending discussion:** remove that one sentence from the behavior-change paragraph. No production change is required for this feedback. Keep the separate non-finite behavior statement for its own assessment. The alpha-zero sentence has not been edited on GitHub.
 
 ### Reviews (1)
 
