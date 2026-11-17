@@ -1526,11 +1526,19 @@ Branch: `users/alvasile/tl-speedup-25-reference-fast-path-float8-output`. Base: 
 
 **Completed:** [Tony's Test Result request](https://github.com/ROCm/rocm-libraries/pull/15275#pullrequestreview-5897489454) is reflected in the [published description](https://github.com/ROCm/rocm-libraries/pull/15275). It names passing Multi-Arch, coverage and Math CI jobs at remote head `b6828c46316720641f2e3f15a1320201d4f1c34b`, records the local Scalar guard at `d9b351947565` and non-finite cast tests at `f6b685979d48`, and states the limits of the temporary combined CPU validation. The original-branch timing measurements retain their hardware, thread and single-run context. The eligibility, cast and dependency wording now describes the agreed final policy. The focused Test Plan runs the gtest binary directly because shared CTest groups those tests by category. Read-back matched the intended description exactly; the remote head, base and title were preserved. Code remains unpublished. [Exact description and publication records](/tmp/tl-pr15275-description-20261117/description.md).
 
-#### Next feedback item — include type selectors in driver runtime errors
+#### Type selectors in driver runtime errors — implemented locally November 17, 2026
 
 [Newling's initial linked review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15275.md#include-the-failing-type-configuration-in-runtime-errors) suggests including the failing storage, compute-input, output and alpha/beta type selectors in exception diagnostics. His suggestion is [aef34bafaad](https://github.com/newling/rocm-libraries/commit/aef34bafaad8296981db27b07f6f2fe96bd6258e).
 
-**Verified and recommended:** the current catch block prints only `Runtime Error: Data type not implemented.` for `--typeA f8 --typeB f16 --typeCD f8`, whose defaults are `computeInputA=f8` and `computeInputB=f16`. The same 1×1×1 command succeeds with either `--computeInputA f16` or `--computeInputB f8`. The startup line already prints the configuration on stdout; adding these selectors to the exception diagnostic makes stderr-only output self-contained. Append the selectors to the existing catch message while retaining the reference's exception text and nonzero exit code. This is a non-blocking diagnostic improvement and requires no additional type-ID allowlist. No implementation or reply has been made for this item. [Probe results](/tmp/tl-pr15275-description-20261117/next-feedback-probe.json).
+**Agreed and implemented:** the driver's exception message now appends `typeA`, `typeB`, `computeInputA`, `computeInputB`, `typeCD` and `typeAlpha`, with their resolved defaults. It retains the original exception text and exit code 1. The unsupported `--typeA f8 --typeB f16 --typeCD f8` combination now identifies its incompatible default multiplication types directly in stderr. The change adds no type-ID allowlist and leaves dispatch decisions in the reference.
+
+**Validation:** all 675 driver CTests pass, with zero skipped or disabled tests. Focused CLI checks cover both Half operand directions and both OCP/fnuz encodings: four unsupported combinations produce the exact six-selector diagnostic and exit code 1, while eight supported multiplication-type alternatives pass numerical validation. [Build, commands, raw outputs and results](/tmp/tl-pr15275-runtime-diagnostic-20261117/README.md).
+
+**Draft reply to Newling — not posted:**
+
+> Added the storage, compute-input, output and alpha/beta type selectors to the driver's runtime exception message, preserving the original exception text and exit code 1. The mixed Float8/Half error now identifies the incompatible default compute-input types. Both supported alternatives pass for both encodings and operand directions, and all 675 driver CTests pass locally.
+
+**Walkthrough status:** all feedback items for #15275 now have an agreed resolution. The code changes remain local; the correctness PR's issue, PR creation, stack insertion and shared-CI/final-production gfx950 validation remain in [Future work](#future-work). A fresh read of #15275's reviews, inline comments and discussion comments, plus Newling's reviews posted on #15259, found no additional human feedback. The next item is [complex C/D aliasing on #15276](#pr-15276).
 
 ### Reviews (1)
 
@@ -1827,6 +1835,14 @@ Source revision: `ede5c5f065835ae571ce0647b4e07af2c6cb8d64`. File: `rocm-librari
 [GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15276) · State: **OPEN**
 
 Branch: `users/alvasile/tl-speedup-26-reference-fast-path-complex`. Base: `users/alvasile/tl-speedup-25-reference-fast-path-float8-output`. Head at collection: `5b4f85f05f2977d06f67cf5405eff41da6800f93`.
+
+### Feedback walkthrough — November 17, 2026
+
+#### Complex C/D aliasing — next item
+
+[Newling's linked review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15276_correctness_20261113.md#preserve-complex-c-until-the-epilogue-has-consumed-it) reports that writing an intermediate sum to D destroys C when they share storage. His example uses A = `(2,0)`, B = `(3,0)`, C = D = `(5,1)`, and alpha = beta = `(1,0)`: the expected result is `(11,1)`, while the reviewed fast path returns `(12,0)`.
+
+**Current source and recommendation:** local #15276 at `e51f9dd0374926ab594f582af2ed21a96628821a` still copies `cReg` to `curBatchD` before reading `curBatchC` and lacks `ComplexInPlaceCDPreservesBetaInput`. Local #15274 at `d6af002f7a656236440771e1dfbc1eb69080f5ac` already owns the shared production correction, which consumes the tile sum directly and reads C before the final D write. The new Float8 correctness branch inherits that correction. Carry it through the planned restack and add a complex in-place regression on #15276 for both complex float and complex double, with nonzero imaginary inputs and nonzero beta. The production correction belongs once in #15274. The remote #15276 head remains `5b4f85f05f2977d06f67cf5405eff41da6800f93`; no branch checkout, restack or implementation on #15276 has occurred for this walkthrough item.
 
 ### Reviews (1)
 
