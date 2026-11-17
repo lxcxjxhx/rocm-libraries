@@ -2292,7 +2292,13 @@ The [published description](https://github.com/ROCm/rocm-libraries/pull/15277) n
 
 **Publication verification:** showed the exact changed text, checked the live body/head/base against the preparation snapshot, patched only the PR body and read it back. Asserted exact equality with the prepared Markdown and unchanged remote head `46ce0b0c3a676b3878f652e4dbf136bdb1f30f9f` and base `users/alvasile/tl-speedup-26-reference-fast-path-complex`. The code was not pushed and the non-HPA replies remain drafts. Exact before/after bodies, the prepared description and CI logs are saved in `/tmp/tl-pr15277-non-hpa-20261117/`.
 
-**Next feedback item:** Tony asks for “Depends on #15276” in Related. The live Related section still contains only the work-tracking reference. Recommend adding `- Depends on #15276: [complex CPU-reference fast path](https://github.com/ROCm/rocm-libraries/pull/15276).` This is a documentation link to the existing direct dependency; no source or stack-order change is needed. The link has not been added yet.
+#### Direct dependency link — published November 17
+
+**Agreed resolution:** added `- Depends on #15276: [complex CPU-reference fast path](https://github.com/ROCm/rocm-libraries/pull/15276).` to [#15277's Related section](https://github.com/ROCm/rocm-libraries/pull/15277), as requested in [Tony's review](https://github.com/ROCm/rocm-libraries/pull/15277#pullrequestreview-5897490540). Patched only this line, verified the exact complete body by read-back, and confirmed unchanged remote head `46ce0b0c3a676b3878f652e4dbf136bdb1f30f9f` and base `users/alvasile/tl-speedup-26-reference-fast-path-complex`. No source or stack-order change was made. Before/after records are saved in `/tmp/tl-pr15277-non-hpa-20261117/pr-dependency-*`.
+
+**Newling's negative-test helper suggestion:** the six new E/gradient rejection cases already use the inherited `EXPECTED_ERROR` helper, which requires exit code 1 and the expected diagnostic. All six passed in the 795-driver-case validation above. The direct-reference cleanup regression remains required in the separate correctness PR tracked by #16120; driver rejection cannot validate fallback cleanup.
+
+**Walkthrough status:** all human feedback items for #15277 have an agreed disposition. Fresh reads of this PR's reviews/comments and Newling's cross-PR reviews on #15259 found no additional undecided feedback. The non-HPA code remains local, its two replies remain drafts, and shared CI/dedicated gfx950 validation of that local change is pending. The next branch is #15278; start with Newling's exact-tail assertion finding, where all-NaN output can pass the current comparison.
 
 ### Reviews (1)
 
