@@ -2601,6 +2601,42 @@ Source revision: `ede5c5f065835ae571ce0647b4e07af2c6cb8d64`. File: `rocm-librari
 
 Branch: `users/alvasile/tl-speedup-28-reference-fast-path-mx-k-tail`. Base: `users/alvasile/tl-speedup-27-reference-fast-path-use-e-gradient`. Head at collection: `e24bb5950c6eacb30a5eb2e201d7e5fba9af6848`.
 
+### Feedback walkthrough — November 17, 2026
+
+#### Exact MX-tail comparison ignores NaNs — implemented locally
+
+**Feedback:** [Newling's initial review](https://github.com/newling/agent-public-reviews/blob/30df5bab4294f839ef85a91c732c36c92c0821ca/rocm-libraries/review_pr15278.md#make-the-exact-mx-tail-test-reject-nans) and [final correctness review](https://github.com/newling/agent-public-reviews/blob/ede5c5f065835ae571ce0647b4e07af2c6cb8d64/rocm-libraries/review_pr15278_correctness_20261113.md#make-the-exact-tail-test-fail-when-any-output-is-nan) show that `maxAbsDiff` ignores NaN differences. Entirely invalid output can pass the new exact tail test.
+
+**Agreed resolution:** applied [Newling's assertion change `f15ee4aacee`](https://github.com/newling/rocm-libraries/commit/f15ee4aacee6031017b93c151ab6f2b3bb618a91), with repository formatting. `PartialLastMXBlockSumsOnlyElementsBelowK` now compares the finite expected vector directly with D using `EXPECT_EQ(expected, d)`. `SCOPED_TRACE` retains K, both MX block sizes and both transpose flags. Other approximate comparisons are unchanged.
+
+**Validation:** temporarily replaced every computed D element with NaN. The original assertion incorrectly passed; the corrected assertion failed with exit code 1, showing the finite expected vector, NaN output and case context. Removed the mutation and its temporary includes. The Release ROCm compiler build then passed all **50 focused reference gtests** and all **813 standard CPU-driver CTests**, including the 18 fast tail cases. These are host numerical checks; they add no GPU or performance evidence. Logs and the temporary control are saved under `/tmp/tl-pr15278-exact-tail-20261117/`.
+
+Commands:
+
+```sh
+cmake --build /tmp/tl-amaxd-installed-ci-20261116/build --target tensilelite-tests cpu-gemm-driver -j 4
+OMP_THREAD_LIMIT=8 OMP_NUM_THREADS=4 KMP_BLOCKTIME=0 \
+  /tmp/tl-amaxd-installed-ci-20261116/build/tensilelite/tests/tensilelite-tests \
+  --gtest_filter='ReferenceFastPath.*:ReferenceMX*.*:*ReferenceMX*/*'
+OMP_THREAD_LIMIT=8 OMP_NUM_THREADS=4 KMP_BLOCKTIME=0 \
+  ctest --test-dir /tmp/tl-amaxd-installed-ci-20261116/build/tensilelite/tests \
+    -L '^standard$' -R '^CPUGemm\.' --output-on-failure --parallel 4 --no-tests=error
+```
+
+##### Draft reply to Newling — not posted
+
+Target: a comment on [#15278](https://github.com/ROCm/rocm-libraries/pull/15278), replying to the linked exact-tail assertion finding.
+
+Thanks, @newling. I applied your direct vector comparison and kept the per-case context with `SCOPED_TRACE`. The all-NaN control passed with the old assertion and failed with the corrected one. After removing the control, all 50 focused reference tests and 813 standard CPU-driver tests passed locally. The change is committed locally and has not been pushed.
+
+#### Next item — obsolete slow-tail rejection and over-read wording
+
+**Feedback:** [Tony's driver comment](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214899), [his CMake comment](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214917) and [Newling's corresponding suggestion](https://github.com/newling/rocm-libraries/commit/b5d8bb5f9a552f26384ff3202fc100c608c10014) challenge the claim that the production slow reference reads past K for equal MX blocks.
+
+**Assessment:** confirmed in the current local source. `ReferenceSolution::SolveCPU` clamps its final segment with `std::min(innerMXLoop, boundSize[0] - i)`, already added by [#13630](https://github.com/ROCm/rocm-libraries/pull/13630). `SlowPathHandlesPartialFinalMXSegment` explicitly exercises slow execution at K=200 with block 128 and passed in the focused suite. The driver still rejects equal-block K tails and has an obsolete explanation. Its independent expected-result loop is a separate implementation, which this PR already changes to stop at K. The historical scratch-build failure is not evidence of a current production over-read; its precise cause/version has not been re-established.
+
+**Recommendation, awaiting discussion:** remove the driver's equal-block K restriction, correct the driver/CMake comments and PR Motivation/Technical Details/Risk wording, convert the two obsolete `BadK` rejection cases into positive slow-tail tests and add slow counterparts for the equal-block fast tail cases. Keep the asymmetric-block slow rejection: one scale per maximum-sized segment still misses smaller-side scale changes. No production slow-loop fix is needed for the equal-block tail item. No changes for this next item have been applied.
+
 ### Reviews (1)
 
 #### tony-davis — COMMENTED — review 5897491239
