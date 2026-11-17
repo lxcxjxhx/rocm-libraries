@@ -4,7 +4,7 @@ Snapshot collected: 2026-11-16 15:12:53 UTC.
 
 Current stack: [#16153](https://github.com/ROCm/rocm-libraries/stack/16153), listed bottom → top. Collection used historical stack [#15515](https://github.com/ROCm/rocm-libraries/stack/15515). At collection, the worktree checked out `users/alvasile/tl-speedup-09-reference-slow-path-amax-d` at `571ecae3fc4814ff951461d1d14e48f780975511`.
 
-This archive contains **12 review submissions, 21 general comments, and 15 inline comments in 14 threads**, plus **14 per-PR review documents and one shared assessment** linked by newling. Review bodies, replies, suggestions, and bot comments are copied in full. Empty review bodies retain their submission metadata. Thread resolution and outdated status are recorded as returned by GitHub.
+The original seven-PR collection contains **12 review submissions, 21 general comments, and 15 inline comments in 14 threads**, plus **14 per-PR review documents and one shared assessment** linked by newling. Review bodies, replies, suggestions, and bot comments are copied in full. Empty review bodies retain their submission metadata. Thread resolution and outdated status are recorded as returned by GitHub.
 
 Each item links to its original source. Bodies reflect the versions available at collection time. Relative Markdown links in imported review documents are expanded to their original GitHub locations. The linked reviews retain their own reviewed commits, findings, and validation claims.
 
@@ -87,6 +87,27 @@ Published branch order, bottom to top (code heads; later AMAX-D tip commits upda
 
 #15257 is the existing prerequisite and now the first member of stack #16153, targeting develop. Local and GitHub stack membership and bases match the chain above, and every descendant contains its predecessor.
 
+### Completed-feedback reply audit — November 17, 2026
+
+A live audit found six unanswered Tony inline threads and missing acknowledgments of completed review-summary requests. Twelve additional replies are now posted and verified: the completed missing items, the summary requests, and completion updates for earlier promise-only replies. The exact bodies are retained in the companion publication record. No review threads were resolved.
+
+| PR | Additional posted reply |
+| --- | --- |
+| #15765 | [Tony — inherited fast-path wrapping test](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4605261431) |
+| #15765 | [Tony — completed stack placement](https://github.com/ROCm/rocm-libraries/pull/15765#issuecomment-6959867624) |
+| #15274 | [Tony — description and dependency completion](https://github.com/ROCm/rocm-libraries/pull/15274#issuecomment-6959868982) |
+| #15275 | [Tony — Scalar narrowing and Vector correctness](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4605263782) |
+| #15275 | [Tony — cast coverage and description completion](https://github.com/ROCm/rocm-libraries/pull/15275#issuecomment-6959871889) |
+| #15276 | [Tony — complex description corrections](https://github.com/ROCm/rocm-libraries/pull/15276#issuecomment-6959873087) |
+| #15277 | [Tony — gradient description and cleanup PR](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6959874232) |
+| #15278 | [Tony — second MX-tail thread](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4605266553) |
+| #15266 | [Tony — negative-test completion](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4605267430) |
+| #15274 | [Tony — fast integer overflow completion](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4605268281) |
+| #15266 | [Newling — scalar parsing completion](https://github.com/ROCm/rocm-libraries/pull/15266#issuecomment-6959880616) |
+| #15274 | [Newling — C/D alias correction completion](https://github.com/ROCm/rocm-libraries/pull/15274#issuecomment-6959881755) |
+
+The only Tony inline threads still lacking a reply are the MX guard, integer-alpha overflow and tracker-link requests on #15765. Its review-body GSU/StreamK question is also open. The [new #15765 section](#pr-15765) copies the previously omitted review and all four original inline comments. The active walkthrough uses `pr-15266-int8-comment`, already checked out on #15765 at `8d6f17d0fdcab834fa9eda9f25756b3a4eb2a817`; supported `gh stack checkout 15765` imported stack #16153 there.
+
 ### Shared CI snapshot at publication verification — November 17, 2026, 19:57 UTC
 
 The new draft PRs have queued checks, and the existing PRs show a mixture of passed, pending, cancelled and failed contexts. Two examined failures report cancellations: [#15259's policy check](https://github.com/ROCm/rocm-libraries/actions/runs/44161453975/job/134316117938) reports `pre-commit=cancelled`; [#15765's clang-tidy summary](https://github.com/ROCm/rocm-libraries/actions/runs/44160728514/job/134313514245) reports cancelled setup and clang-tidy jobs. The remaining failed summaries have not been diagnosed. Required shared-CI execution and successful final-head results remain open. The complete check rollups and these two logs are saved in `/tmp/tl-reference-publication-20261117/`.
@@ -158,6 +179,14 @@ Both defects predate [#15275](https://github.com/ROCm/rocm-libraries/pull/15275)
 - [ ] Verify shared-CI execution against the published code.
 
 The batching limitation is preserved. [Tony](https://github.com/ROCm/rocm-libraries/pull/15277#discussion_r4602603298) and [Newling](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6954240221) already received replies linking the existing ticket and separate-PR plan. Their replies require no duplicate publication. The non-HPA accumulation guard remains owned by #15277 and survives this integration.
+
+### 7. Newly audited #15765 feedback — pending walkthrough
+
+- [ ] Evaluate and address [Tony's MX-scale guard](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389917), with a direct-reference regression.
+- [ ] Evaluate [defined wrapping for slow integer-alpha reductions](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389937); it remains inherited behavior in the published code.
+- [ ] Update the [regression comment's tracker link](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389951).
+- [ ] Investigate the GSU/StreamK integer-partial accumulation question in [Tony's review body](https://github.com/ROCm/rocm-libraries/pull/15765#pullrequestreview-5897715328). The Float8 split-K validation does not answer this Int8 question.
+- [x] Reply to the completed stack placement and downstream fast-test wrapping concerns; #15274 owns the unsigned fast multiply-adds and overflow regressions.
 
 ### Integrated validation evidence — November 17, 2026
 
@@ -738,6 +767,117 @@ Source revision: `ede5c5f065835ae571ce0647b4e07af2c6cb8d64`. File: `rocm-librari
 > </details>
 
 **Evaluation and agreed resolution — November 16, 2026:** Ignored per user instruction; no follow-up action for #15259. The patch check passes, while the TensileLite-CPP project flag is 52.90% against an 80% target; that measures the entire flag’s coverage, not just this patch. The live rollup also has a failed hipBLASLt project coverage check. The [TensileLite testing guidance](https://github.com/ROCm/rocm-libraries/blob/571ecae3fc4814ff951461d1d14e48f780975511/projects/hipblaslt/tensilelite/TESTING.md#L753) identifies this coverage report as advisory. The new AMAX-D tests already run and cover the intended output behavior.
+
+<a id="pr-15765"></a>
+
+## PR #15765 — fix(tensilelite): accumulate Int8 dot products before float epilogues
+
+[GitHub PR](https://github.com/ROCm/rocm-libraries/pull/15765) · State: **OPEN**
+
+Branch: `users/alvasile/fix-int8-slow-reference-accumulation`. Base: #15259. Current published head: `8d6f17d0fdcab834fa9eda9f25756b3a4eb2a817`.
+
+### Feedback walkthrough — added November 17, 2026
+
+This PR was inserted into the stack, but its existing review was omitted from the original seven-PR feedback inventory. The published stack placement and downstream unsigned fast reduction/exact-sum tests satisfy the corresponding review requests. Three inline requests and the GSU/StreamK question still need evaluation. The first item is the missing MX guard in the slow integer reduction.
+
+### Reviews
+
+#### tony-davis — APPROVED — review 5897715328
+
+[Original review](https://github.com/ROCm/rocm-libraries/pull/15765#pullrequestreview-5897715328) · Submitted: 2026-11-13T20:37:03Z
+
+> Hi Alex! Thanks for chasing newling's question all the way down to a real bug, and for filing #15764 with a reproducer. The fix reads cleanly to me. Summing in `uint32_t`, reinterpreting the finished sum as `int32_t`, and converting to float once is well-defined (the client builds as C++20, where that conversion is modular). I believe it also matches the hardware: the Int8 MFMA/WMMA instructions accumulate in 32-bit integer registers, and I didn't find a clamp modifier in rocisa's emission. For every other type, `MacT` is just `Accumulator` and the new cast at line 2137 is an identity. So only the four float-alpha ids (`I8_I32_S`, `I8_I8_S`, `I8_H_S`, `I8_B_S`) change, and `IntegerAlphaControl` pins that.
+>
+> I really like the tests. I worked each case by hand against the old float accumulation, and your counts check out. `PreservesTrailingTerms`, `FractionalBeta` and `NegativeDotProduct` fail on both legs (6 of 12). The four AMAX-D cases fail because AMAX-D reads 32 instead of 32 + 2^-18, and the wraparound case fails because the old float sum hits 2^31 exactly and gives +2^30. That's 11 of 17. The controls pass either way, which is what makes the rest believable. All 17 also ran green in TheRock's `Test tensilelite` on gfx94X ([job](https://github.com/ROCm/rocm-libraries/actions/runs/43469797605/job/132086259440)), which runs `tensilelite-tests` at the standard tier. Math CI (including `preliminary` and `tensilelite-unit-codecov`), Component CI's TensileLite coverage and the HOST_ASAN builds are still running. The red `Multi-Arch CI Summary` is from a run that got cancelled and replaced, so I don't think it's yours.
+>
+> I'm approving. The one thing I'd like settled before merge is where this sits in the stack. Right now #15765 targets speedup-09 next to #15266, not under it. So #15274's fast path (exact int32 sum) lands on a branch whose slow path still has #15764, and the two paths disagree for large-K float-alpha Int8 until this is below them. My suggestion would be #15259, then #15765, then #15266 rebased onto this branch, then #15274 and #15275. `git merge-tree` shows no conflicts with either head. Once that's done, the asks I left on #15274 become testable: sum the fast path in `uint32_t` like here, and send `Int8FloatEpilogueStartsFromExactSum` through `solveFastAndSlow`. The K = 151 limit in #15266's CMake comment can probably go too. It would help to say this in the description and link #15274.
+>
+> A few non-blocking things inline: a guard for MX scales on the integer MAC path, the same `uint32_t` treatment for the integer-alpha ids, and a note on what your `TryFastPath` legs will start doing after the restack. One question I couldn't settle from the code: when GSU or StreamK splits K, does the kernel add the int32 partials as integers or convert each to float first? If it's the latter, I bet the GPU can still drift from this reference above 2^24. That's just a question, not a reason to hold this.
+>
+> <!-- rocm-pr-quality:attestation v1 -->
+> > **Reviewed with the ROCm PR-quality skill.**
+> > - Skill: `rocm-pr-quality` (base) - overlays: `hipblaslt-pr-quality`
+> > - Action: `review` - Result: **APPROVED** (`0` BLOCKING; `1` IMPORTANT)
+> > - Risk: `2`
+> > - Reviewed commit: `dd42f116693f2e04476fd6f0e15b260cd4735d9f`
+> > - Attestation: `042011e4`
+> >
+> > <sub>Machine-checkable attestation. The digest ties this review to this PR; later commits are
+> > allowed. The reviewed commit is informational (what the review looked at).</sub>
+
+#### Alex-Vasile — COMMENTED — review 5945928224
+
+[Original review](https://github.com/ROCm/rocm-libraries/pull/15765#pullrequestreview-5945928224) · Submitted: 2026-11-17T20:20:33Z
+
+
+
+### Inline review threads
+
+#### Thread 1
+
+`projects/hipblaslt/tensilelite/client/src/Reference.cpp` · Line: 1857 · Resolved: False · Outdated: False
+
+##### tony-davis — comment 4568389917
+
+[Original comment](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389917) · Created: 2026-11-13T20:37:03Z
+
+> (non-blocking) With `MacT = uint32_t`, line 2132's `multiply<MacT>(val, mxScale)` casts the float MX scale to `uint32_t`, so a scale like 0.125 would become 0. Non-MX problems pass 1.0f, so it's a no-op today, and I didn't find any Int8 + MX config in `Tensile/Tests`. #15274's fast path rejects this case with `macSupportsMX`. A guard here, outside the OpenMP region, would make the slow path loud about it too.
+>
+> ```suggestion
+>             using SignedMacT = std::conditional_t<isInt8Float, int32_t, MacT>;
+>             if constexpr(isInt8Float)
+>             {
+>                 // The integer MAC would truncate a fractional MX scale to zero.
+>                 if(problem.mxBlockA() || problem.mxBlockB())
+>                     throw std::runtime_error("Int8 CPU reference does not support MX scales");
+>             }
+> ```
+
+#### Thread 2
+
+`projects/hipblaslt/tensilelite/client/src/Reference.cpp` · Line: 1854 · Resolved: False · Outdated: False
+
+##### tony-davis — comment 4568389937
+
+[Original comment](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389937) · Created: 2026-11-13T20:37:03Z
+
+> (non-blocking, fine as a follow-up) The integer-alpha ids (`I8_I8_I32`, `I8_I32_I32`) still sum in signed `int32_t`, so they keep the undefined-behavior overflow this PR removes for float alpha. I think dropping this condition (and renaming the flag) would route them through `uint32_t` too, and the final `int32_t` cast is a no-op for them. That predates this PR, so I'm happy either way.
+
+#### Thread 3
+
+`projects/hipblaslt/tensilelite/tests/ReferenceInt8Accumulation_test.cpp` · Line: 187 · Resolved: False · Outdated: False
+
+##### tony-davis — comment 4568389943
+
+[Original comment](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389943) · Created: 2026-11-13T20:37:03Z
+
+> (non-blocking) At this base, Int8 isn't fast-path eligible, so the `true` leg falls back to the slow path. Once #15274 is under this, it will run #15274's `int32_t` K loop at K = 131072, which overflows. I bet it still passes, since the hardware wraps, but it would be passing on undefined behavior. That's one more reason I'd like #15274 to sum in `uint32_t` like you do here. Then this test becomes the fast-path overflow test I asked for over there.
+
+##### Alex-Vasile — comment 4605261431
+
+[Original comment](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4605261431) · Created: 2026-11-17T20:20:33Z
+
+> The downstream fast path now uses defined unsigned 32-bit multiply-adds in #15274, with K=140,000 regressions for both overflow directions and Int32/float alpha. At this PR's position below #15274, both requested test legs still use the slow path. On #15274 and its descendants, the inherited TryFastPath leg exercises the corrected fast implementation. The code and stack order are published.
+
+#### Thread 4
+
+`projects/hipblaslt/tensilelite/tests/ReferenceInt8Accumulation_test.cpp` · Line: 40 · Resolved: False · Outdated: False
+
+##### tony-davis — comment 4568389951
+
+[Original comment](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389951) · Created: 2026-11-13T20:37:03Z
+
+> (non-blocking) I'd point this at the tracker. #15764 already links newling's thread.
+>
+> ```suggestion
+>     // Regression: https://github.com/ROCm/rocm-libraries/issues/15764
+> ```
+
+### Posted review-summary response
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15765#issuecomment-6959867624)
+
+> @tony-davis Regarding your [stack-placement request](https://github.com/ROCm/rocm-libraries/pull/15765#pullrequestreview-5897715328): the published order is now #15259 → #15765 → #15266 → #15274 in [stack #16153](https://github.com/ROCm/rocm-libraries/stack/16153). #15266 restores K=1044 coverage, and #15274 checks both references against the exact 16,790,292 sum and defines fast-path wrapping. This PR's description now explains those downstream responsibilities and links #15274. The other inline suggestions and your GSU/StreamK question remain under review.
 
 <a id="pr-15266"></a>
 

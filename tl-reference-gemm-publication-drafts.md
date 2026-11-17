@@ -1013,3 +1013,111 @@ With #15765 below this branch, the regression now checks both references against
 
 Final integrated local validation passed 925/925 CTests in both build and installed trees at code commit `4135e6d96f2df606404ab51af3214a8b2f4a3427`. Passing shared CI for the published head has not yet been verified.
 ````
+
+## Additional completed-feedback replies — published November 17, 2026
+
+### PR #15765 — Tony — inherited fast-path wrapping test
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4605261431)
+
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15765#discussion_r4568389943)
+
+````markdown
+The downstream fast path now uses defined unsigned 32-bit multiply-adds in #15274, with K=140,000 regressions for both overflow directions and Int32/float alpha. At this PR's position below #15274, both requested test legs still use the slow path. On #15274 and its descendants, the inherited TryFastPath leg exercises the corrected fast implementation. The code and stack order are published.
+````
+
+### PR #15765 — Tony — completed stack placement
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15765#issuecomment-6959867624)
+
+````markdown
+@tony-davis Regarding your [stack-placement request](https://github.com/ROCm/rocm-libraries/pull/15765#pullrequestreview-5897715328): the published order is now #15259 → #15765 → #15266 → #15274 in [stack #16153](https://github.com/ROCm/rocm-libraries/stack/16153). #15266 restores K=1044 coverage, and #15274 checks both references against the exact 16,790,292 sum and defines fast-path wrapping. This PR's description now explains those downstream responsibilities and links #15274. The other inline suggestions and your GSU/StreamK question remain under review.
+````
+
+### PR #15274 — Tony — description and dependency completion
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15274#issuecomment-6959868982)
+
+````markdown
+@tony-davis Updated the description in response to your [review](https://github.com/ROCm/rocm-libraries/pull/15274#pullrequestreview-5897488728): it links #15764/#15765, identifies the completed integer reduction, and records the earlier published-head CI separately from the integrated local results. #15765 is now below this PR, and the exact-sum regression checks both paths. Fast-path wrapping and its boundary tests are published. The integrated build and installed suites each passed 925/925 CTests; final-head shared CI remains to be verified.
+````
+
+### PR #15275 — Tony — Scalar narrowing and Vector correctness
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4605263782)
+
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15275#discussion_r4568213239)
+
+````markdown
+Implemented the Scalar-only Half-to-Float8 narrowing fallback here. Numerical validation confirmed that Scalar scaling must happen before narrowing, while Vector scaling belongs after narrowing and reduction, so Vector remains fast-eligible. The pre-existing slow Vector omission and MultipleBuffer split-K double-scaling defect are fixed in the preceding [#16149](https://github.com/ROCm/rocm-libraries/pull/16149), closing [#16148](https://github.com/ROCm/rocm-libraries/issues/16148). Integrated validation passed 2,304 CPU cases, 1,728 nongrouped and 384 grouped gfx942 cases. Final production gfx950 qualification and shared CI remain pending.
+````
+
+### PR #15275 — Tony — cast coverage and description completion
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15275#issuecomment-6959871889)
+
+````markdown
+@tony-davis The remaining points in your [review](https://github.com/ROCm/rocm-libraries/pull/15275#pullrequestreview-5897489454) are published: all four cast tables include +Inf, -Inf and NaN with explicit expectations, and the description records earlier published-head CI separately from integrated local validation. It also explains the Scalar fallback, retained Vector eligibility, and dependency on #16149. The integrated build and installed suites each passed 925/925 CTests; final-head shared CI and production gfx950 qualification remain pending.
+````
+
+### PR #15276 — Tony — complex description corrections
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15276#issuecomment-6959873087)
+
+````markdown
+@tony-davis Applied all three description corrections from your [review](https://github.com/ROCm/rocm-libraries/pull/15276#pullrequestreview-5897490033): Test Result links the earlier CTest run and all five passing complex configurations, the incorrect alpha-zero limitation is removed, and Related links the dependency on #15275. Historical timings remain identified as timings. The description also limits exact agreement to the tested finite cases. Code is published; integrated build and installed suites each passed 925/925 CTests, with final-head shared CI still to be verified.
+````
+
+### PR #15277 — Tony — gradient description and cleanup PR
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15277#issuecomment-6959874232)
+
+````markdown
+@tony-davis Updated Test Result and Related in response to your [review](https://github.com/ROCm/rocm-libraries/pull/15277#pullrequestreview-5897490540). The description identifies the earlier published-head CI, links #15276, and keeps final production gfx950 gradient qualification pending. The non-HPA bias-gradient fallback is published here. The separate cleanup/error-reporting fix is published in [#16150](https://github.com/ROCm/rocm-libraries/pull/16150), which closes [#16120](https://github.com/ROCm/rocm-libraries/issues/16120). Integrated build and installed suites each passed 925/925 CTests; final-head shared CI remains to be verified.
+````
+
+### PR #15278 — Tony — second MX-tail thread
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4605266553)
+
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15278#discussion_r4568214917)
+
+````markdown
+Implemented and published the slow counterparts here: 15 equal-block slow-tail cases share the fast cases' inputs, and the former K=33/K=16 rejection cases now check successful slow execution. The production slow loop already clamps at K; the obsolete driver restriction, CMake comments and description have been corrected. The asymmetric-block slow rejection remains. Integrated build and installed suites each passed 925/925 CTests; final-head shared CI and gfx950 qualification remain pending.
+````
+
+### PR #15266 — Tony — negative-test completion
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4605267430)
+
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15266#discussion_r4568212077)
+
+````markdown
+Implemented and published the shared diagnostic checker for these four cases. Each now requires exit code 1 and its intended diagnostic, and the shared registration includes the tests in both build-tree and installed standard suites. An unrelated argument error is rejected by the checker. The integrated build and installed suites each passed 925/925 CTests; final-head shared CI remains to be verified.
+````
+
+### PR #15274 — Tony — fast integer overflow completion
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4605268281)
+
+[Original inline comment](https://github.com/ROCm/rocm-libraries/pull/15274#discussion_r4568212559)
+
+````markdown
+Implemented and published the unsigned multiply-add correction, interpreting the wrapped result as signed Int32 before the epilogue. The K=140,000 regressions cover both overflow directions with Int32 and float alpha. The corrected slow float-alpha reference is inherited from #15765; inherited slow integer-alpha overflow remains a separate open item on that PR. The integrated build and installed suites each passed 925/925 CTests; final-head shared CI remains to be verified.
+````
+
+### PR #15266 — Newling — scalar parsing completion
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15266#issuecomment-6959880616)
+
+````markdown
+@newling Your [scalar-parsing fix](https://github.com/newling/rocm-libraries/commit/2fcafc2eee3f322abd349beeda112823931c8591) is implemented and published: alpha and beta remain double until conversion to the selected scalar type, and the Int32 boundary regression covers valid beta 2147483647. The driver also carries the shared TypeInfo cleanup and diagnostic-checked negative tests. The integrated build and installed suites each passed 925/925 CTests; final-head shared CI remains to be verified.
+````
+
+### PR #15274 — Newling — C/D alias correction completion
+
+[Posted reply](https://github.com/ROCm/rocm-libraries/pull/15274#issuecomment-6959881755)
+
+````markdown
+@newling Your [C/D alias correction](https://github.com/newling/rocm-libraries/commit/1024648658c) is implemented and published in #15274. The epilogue reads the accumulated tile value without overwriting C before beta uses it, and the 1×1 regression checks the expected result 11. #15276 inherits this production fix and adds the complex regressions. The integrated build and installed suites each passed 925/925 CTests; final-head shared CI remains to be verified.
+````
